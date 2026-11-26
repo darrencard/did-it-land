@@ -1,0 +1,40 @@
+{
+  "repository": "https://github.com/darrencard/product-engineering-update",
+  "commit": "366da9bfede540ec19e9164ad5ad17ce28c1d06b",
+  "release": "v0.11.0 line, main at 2026-11-26",
+  "rule": "Copied unchanged. Never edit these files here; copy them again from the commit and update this file and its hashes.",
+  "files": {
+    "scripts/landing_brief.py": {
+      "from": "skills/landing-brief/scripts/landing_brief.py",
+      "sha256": "2d13573543c74ebe1bf001b97287287474a0ec298f34709a1bbfc643be051948"
+    },
+    "scripts/vendor/collect.py": {
+      "from": "skills/product-engineering-update/scripts/collect.py",
+      "sha256": "f58d3cd6db1fc7a5e73441618ed94460189aeb724be1c42934313d23d5bd93c4"
+    },
+    "scripts/vendor/convert.py": {
+      "from": "skills/product-engineering-update/scripts/convert.py",
+      "sha256": "f1d055c02e29c67690f3caac7b7eb3213afab20042ff78a8080ebf172b183a55"
+    },
+    "scripts/vendor/from_posthog.py": {
+      "from": "skills/product-engineering-update/scripts/from_posthog.py",
+      "sha256": "73fc0ad5ac35289ec16ce09d92ae8e22286bbb0229ffed1465c11efa2f703c4e"
+    },
+    "scripts/vendor/from_amplitude.py": {
+      "from": "skills/product-engineering-update/scripts/from_amplitude.py",
+      "sha256": "96a1314d2cacc58b9bc3d9f3f5229c41a1404f500d25212193371d60dfb556d9"
+    },
+    "scripts/vendor/from_mixpanel.py": {
+      "from": "skills/product-engineering-update/scripts/from_mixpanel.py",
+      "sha256": "984986963edc6c9230b30e3c38899e193a5c4c5930c09e80116d526f532ec71d"
+    },
+    "scripts/vendor/from_stripe.py": {
+      "from": "skills/product-engineering-update/scripts/from_stripe.py",
+      "sha256": "4b588e93735d423648e178f7e75cd0216c2ae60db1074fcc0ebab11a4054a6da"
+    },
+    "assets/vendor/template.html": {
+      "from": "skills/product-engineering-update/assets/template.html",
+      "sha256": "e5740431ab5269606709d352d3d253325df740830e8316f06478873e71d430d0"
+    }
+  }
+}

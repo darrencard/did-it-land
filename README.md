@@ -6,12 +6,14 @@ A free Claude skill that reads each shipped bet against its landing brief and sa
 
 **Why it matters:** shipping got cheap, so "we shipped it" says little. What matters is whether the metric moved past the bar by the date, and whether that move is real.
 
+**Where it sits:** step 4 of the Landing Loop. It reads the bet's `landing/<bet>.json` record, writes only its `landed` key, and renders the read as one HTML page in the Leader Report style.
+
 **How it works:** Python computes every call and every figure from your own exports, each with its source. Claude writes around the read and never changes it, and a check blocks prose that claims more than the data shows.
 
 ## Install: paste this into Claude Code
 
 ```text
-Install the did-it-land skill from https://github.com/darrencard/did-it-land: clone it, find a Python 3.11 or later on this machine (macOS python3 is often 3.9), run the tests with it (python -m unittest discover -s evals), and copy skills/did-it-land into ~/.claude/skills/did-it-land. Then run a post-launch read on my shipped bets: find each one's landing brief and its metric readings in the tools connected to this session, put them in the two CSVs the skill describes, ask me only for what you cannot find, and show the read exactly as the script prints it.
+Install the did-it-land skill from https://github.com/darrencard/did-it-land: clone it, find a Python 3.11 or later on this machine (macOS python3 is often 3.9), run the tests with it (python -m unittest discover -s evals), and copy skills/did-it-land into ~/.claude/skills/did-it-land. Then run a post-launch read on my shipped bets: find each one's landing brief and its metric readings in the tools connected to this session (PostHog, Amplitude, Mixpanel or Stripe first, through the skill's collectors; CSV for anything else), ask me only for what you cannot find, and show the read exactly as the script prints it, with the HTML page.
 ```
 
 You need Python 3.11 or later; the scripts say so and stop on anything older. Nothing else to install.

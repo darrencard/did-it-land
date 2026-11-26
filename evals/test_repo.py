@@ -11,7 +11,7 @@ from _path import ROOT, SCRIPTS
 import did_it_land
 import landing_brief
 
-TEXT = [p for p in ROOT.rglob("*") if p.is_file() and p.suffix in {".md", ".py", ".json", ".toml", ".yml", ".txt"} and ".git" not in p.parts and ".ruff_cache" not in p.parts]
+TEXT = [p for p in ROOT.rglob("*") if p.is_file() and p.suffix in {".md", ".py", ".json", ".toml", ".yml", ".txt"} and not {".git", ".ruff_cache", "runs", "vendor"} & set(p.parts)]
 BANNED = re.compile(r"\b(AI-powered|unlock|supercharge|seamless|robust|get started)\b", re.I)
 # The rule names in the overclaim check and the tests that exercise it may name the banned words.
 ALLOWED_BANNED = {"did_it_land.py", "test_repo.py", "test_claims.py"}
@@ -54,7 +54,7 @@ class Versions(unittest.TestCase):
         plugin = json.loads((ROOT / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))["version"]
         project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
         skill = re.search(r'version: "([^"]+)"', (SCRIPTS.parent / "SKILL.md").read_text(encoding="utf-8")).group(1)
-        self.assertEqual({plugin, project, skill}, {"0.1.0"})
+        self.assertEqual({plugin, project, skill}, {"0.2.0"})
 
 
 class BriefSchema(unittest.TestCase):

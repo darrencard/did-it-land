@@ -50,7 +50,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import checks  # noqa: E402
 import landing_brief  # noqa: E402
+import loop  # noqa: E402
 
+VERSION = "0.2.0"
 STATUSES = ("landed", "watch", "stalled")
 # Under this many pre-launch readings the spread is a rough estimate; the read says so but does not hold the call.
 THIN_BASELINE = 5
@@ -94,6 +96,10 @@ class BetRead:
     next_step: str = ""
     decides: str | None = None
     not_read: str | None = None
+    slug: str = ""
+    brief_path: str | None = None
+    unit: str = ""
+    context: dict[str, Any] = field(default_factory=dict)
 
 
 def clean(text: Any, limit: int = 200) -> str:
@@ -205,9 +211,17 @@ def _before(readings: list[Reading], r: Reading) -> Reading | None:
     return readings[i - 1] if i > 0 else None
 
 
-def read_bet(bet: dict[str, Any], metrics: dict[str, Metric], as_of: dt.datetime, base_dir: Path) -> BetRead:
+def unit_of(brief: landing_brief.Brief) -> str:
+    """The unit the brief's bar is written in, for the loop record: %, USD, h, or number."""
+    if brief.unit:
+        return brief.unit
+    return {"$": "USD", "£": "GBP", "€": "EUR"}.get(brief.prefix, "number")
+
+
+def read_bet(bet: dict[str, Any], metrics: dict[str, Metric], as_of: dt.datetime, base_dir: Path, loop_dir: Path | None = None) -> BetRead:
     """One bet's read. Every figure it prints comes from the bundle; the status word comes from the rule above."""
     out = BetRead(id=clean(bet.get("id", ""), 40), name=clean(bet["name"], 120), status=None, reason="")
+    out.slug = loop.slug(str(bet["name"]))
     if not bet.get("brief"):
         out.not_read = "No landing brief, so there is no bar or date to read it against. Write one before the next read."
         return out
@@ -218,6 +232,28 @@ def read_bet(bet: dict[str, Any], metrics: dict[str, Metric], as_of: dt.datetime
         out.not_read = f"The landing brief cannot be used: {clean(e, 400)}"
         return out
     out.decides = clean(brief.decides, 120)
+    out.brief_path = str(brief_path)
+    out.unit = unit_of(brief)
+    record = None
+    if loop_dir is not None:
+        try:
+            record = loop.load(loop_dir, out.slug)
+        except loop.RecordError as e:
+            raise BundleError(f"the loop record cannot be read: {e}") from None
+        out.context = loop.context(record)
+        recorded = ((record or {}).get("brief") or {}).get("sha256")
+        if recorded and recorded != loop.sha256(brief_path):
+            out.flags.append(
+                {
+                    "code": "brief-changed",
+                    "text": "The brief has changed since the loop record was opened, so the bar may have moved after work began. Restore it, or treat it as a new brief.",
+                }
+            )
+        spent = loop.cost_figure(record, "tokens_per_task")
+        if spent is not None and brief.tokens_per_task is not None and spent > brief.tokens_per_task:
+            out.flags.append(
+                {"code": "over-cost-budget", "text": f"The cost record shows {spent:,.10g} tokens per task, over the brief's budget of {brief.tokens_per_task:,.10g}."}
+            )
     name, how = checks.match_metric(brief.metric, list(metrics))
     if name is None:
         out.not_read = f'The brief names the metric "{clean(brief.metric, 80)}", and the bundle has no data for it. Export it from the source and read again.'
@@ -319,13 +355,17 @@ def read_bet(bet: dict[str, Any], metrics: dict[str, Metric], as_of: dt.datetime
                     "text": f"The pre-launch spread comes from {level.n_baseline} readings, so the noise band itself is rough. Weigh the noise call lightly.",
                 }
             )
+        pre_dates = [r.date for r in readings if r.date < shipped]
         figures["move"] = {
+            "baseline_from": str(pre_dates[0]),
+            "baseline_to": str(pre_dates[-1]),
             "baseline_mean": level.baseline_mean,
             "baseline_sd": level.baseline_sd,
             "baseline_n": level.n_baseline,
             "baseline_shown": brief.show(level.baseline_mean),
             "to": to_value,
             "to_shown": brief.show(to_value),
+            "to_date": str((deciding or current).date),
             "delta": level.delta,
             "z": None if flat_baseline else level.z,
             "flat_baseline": flat_baseline,
@@ -355,10 +395,24 @@ def read_bet(bet: dict[str, Any], metrics: dict[str, Metric], as_of: dt.datetime
             start = before_launch[-1].date if before_launch else shipped
             window = [r for r in readings if r.date >= start]
             o_window = [r for r in metrics[oname].readings if start <= r.date <= today]
+        if oname is not None and not o_window:
+            out.flags.append(
+                {"code": "no-outcome-data", "text": f"{clean(oname, 80)} has no reading since {start}, so coupling is not checked yet. Read again after its next reading."}
+            )
+        elif oname is not None:
             proxy_sign = 1 if brief.higher_is_better else -1
             coupling = checks.classify_coupling([proxy_sign * r.value for r in window], [r.value for r in o_window], outcome["better"])
             o_first, o_last = (o_window[0].value, o_window[-1].value) if o_window else (None, None)
-            figures["outcome"] = {"metric": clean(oname, 120), "source": metrics[oname].source, "from": o_first, "to": o_last, "verdict": coupling.verdict, "n": coupling.n}
+            figures["outcome"] = {
+                "metric": clean(oname, 120),
+                "source": metrics[oname].source,
+                "from": o_first,
+                "to": o_last,
+                "window_from": str(o_window[0].date) if o_window else None,
+                "window_to": str(o_window[-1].date) if o_window else None,
+                "verdict": coupling.verdict,
+                "n": coupling.n,
+            }
             if coupling.verdict == "decoupled":
                 out.flags.append(
                     {
@@ -377,7 +431,7 @@ def read_bet(bet: dict[str, Any], metrics: dict[str, Metric], as_of: dt.datetime
                 out.flags.append({"code": "outcome-thin", "text": f"Fewer than three readings of {clean(oname, 80)} since launch, so coupling is not judged yet."})
 
     # The caps: a landed call needs every check to pass.
-    blockers = {"brief-after-launch", "source-stale", "source-jumpy", "within-noise", "no-baseline", "metric-up-outcome-down", "metric-up-outcome-flat"}
+    blockers = {"brief-changed", "brief-after-launch", "source-stale", "source-jumpy", "within-noise", "no-baseline", "metric-up-outcome-down", "metric-up-outcome-flat"}
     held = [f for f in out.flags if f["code"] in blockers]
     if status == "landed" and held:
         status = "watch"
@@ -403,6 +457,8 @@ def read_bet(bet: dict[str, Any], metrics: dict[str, Metric], as_of: dt.datetime
     codes = {f["code"] for f in out.flags}
     if status == "landed":
         step = "Keep the metric on the scorecard, and decide whether to scale the bet."
+    elif "brief-changed" in codes:
+        step = "Put the brief back as it was when the record was opened, or open a new record for the new bar."
     elif "brief-after-launch" in codes:
         step = "Treat this bar as a new brief: date it today and read against it from the next reading."
     elif codes & {"source-stale", "source-jumpy"}:
@@ -423,18 +479,57 @@ def read_bet(bet: dict[str, Any], metrics: dict[str, Metric], as_of: dt.datetime
     return out
 
 
-def read(bundle_path: Path) -> dict[str, Any]:
+def read(bundle_path: Path, loop_dir: Path | None = None) -> dict[str, Any]:
     data, metrics, as_of = load_bundle(bundle_path)
-    bets = [read_bet(b, metrics, as_of, bundle_path.parent) for b in data["bets"]]
+    bets = [read_bet(b, metrics, as_of, bundle_path.parent, loop_dir) for b in data["bets"]]
     counts = {s: sum(1 for b in bets if b.status == s) for s in STATUSES}
     counts["not read"] = sum(1 for b in bets if b.status is None)
     return {
         "company": clean(data.get("company", ""), 80),
         "illustrative": bool(data.get("illustrative")),
         "as_of": as_of.isoformat().replace("+00:00", "Z"),
+        "computed_by": f"did-it-land {VERSION}",
         "counts": counts,
         "bets": [b.__dict__ for b in bets],
     }
+
+
+def landed_key(b: dict[str, Any], as_of: str) -> dict[str, Any]:
+    """The `landed` key for one bet's loop record. Every figure carries value, unit, source, window and as_of."""
+    f, src, unit = b["figures"], b["source"], b["unit"]
+    figs = {"current": loop.figure(f["current"]["value"], unit, src, f["shipped"], f["current"]["date"], as_of)}
+    figs["bar"] = loop.figure(f["bar"]["value"], unit, "landing brief: " + Path(b["brief_path"]).name, None, f["bar"]["by"], as_of)
+    if "at_date" in f:
+        figs["at_date"] = loop.figure(f["at_date"]["value"], unit, src, f["shipped"], f["at_date"]["date"], as_of)
+    if "move" in f:
+        m = f["move"]
+        figs["baseline_mean"] = loop.figure(m["baseline_mean"], unit, src, m["baseline_from"], m["baseline_to"], as_of)
+        figs["baseline_sd"] = loop.figure(m["baseline_sd"], unit, src, m["baseline_from"], m["baseline_to"], as_of)
+        if m["z"] is not None:
+            figs["move_z"] = loop.figure(m["z"], "sd", f"computed from {src}", m["baseline_from"], m["to_date"], as_of)
+    if "outcome" in f:
+        o = f["outcome"]
+        figs["outcome_from"] = loop.figure(o["from"], "number", o["source"], o["window_from"], o["window_from"], as_of)
+        figs["outcome_to"] = loop.figure(o["to"], "number", o["source"], o["window_from"], o["window_to"], as_of)
+    return {
+        "status": b["status"],
+        "reason": b["reason"],
+        "computed_by": f"did-it-land {VERSION}",
+        "as_of": as_of,
+        "metric": b["metric"],
+        "better": f["bar"]["better"],
+        "by": f["bar"]["by"],
+        "shipped": f["shipped"],
+        "figures": figs,
+        "flags": b["flags"],
+        "next_step": b["next_step"],
+        "decides": b["decides"],
+    }
+
+
+def write_loop(result: dict[str, Any], loop_dir: Path) -> list[Path]:
+    """Write the `landed` key for every bet that was read. A bet not read gets no record: there is no status to write."""
+    return [loop.write(loop_dir, b["slug"], Path(b["brief_path"]), landed_key(b, result["as_of"])) for b in result["bets"] if b["status"]]
 
 
 def to_markdown(result: dict[str, Any]) -> str:
@@ -474,6 +569,9 @@ def to_markdown(result: dict[str, Any]) -> str:
         if "outcome" in f:
             o = f["outcome"]
             lines.append(f"- Outcome, {o['metric']}: {o['from']:g} to {o['to']:g} over the same window ({o['n']} readings). Source: {o['source']}.")
+        for key, figs in b["context"].items():
+            shown = "; ".join(f"{c['name']} {c['value']:,.10g}{' ' + c['unit'] if c['unit'] else ''} ({c['source']})" for c in figs)
+            lines.append(f"- Context from the loop record, {key}: {shown}.")
         for flag in b["flags"]:
             lines.append(f"- Flag, {flag['code']}: {flag['text']}")
         lines.append(f"- Next step: {b['next_step']} Decides: {b['decides']}.")
@@ -574,14 +672,28 @@ def main() -> int:
     ap.add_argument("bundle", help="init: a new folder to set up; read and check: the bundle JSON")
     ap.add_argument("prose", nargs="?", help="check: a Markdown file of prose written about the read")
     ap.add_argument("--json", action="store_true", help="read: print JSON instead of Markdown")
+    ap.add_argument("--loop", help="read: the working folder holding landing/<bet>.json; reads each record, writes only its landed key")
+    ap.add_argument("--out", help="read: a folder to write read.md, read.html and read.json into")
     args = ap.parse_args()
     if args.command == "init":
         return init(Path(args.bundle))
     try:
-        result = read(Path(args.bundle))
+        result = read(Path(args.bundle), Path(args.loop) if args.loop else None)
     except BundleError as e:
         raise SystemExit(f"did_it_land: {e}") from None
     if args.command == "read":
+        if args.loop:
+            for p in write_loop(result, Path(args.loop)):
+                print(f"did_it_land: wrote the landed key in {p}", file=sys.stderr)
+        if args.out:
+            import render_html  # noqa: PLC0415  (only needed for --out)
+
+            folder = Path(args.out)
+            folder.mkdir(parents=True, exist_ok=True)
+            (folder / "read.md").write_text(to_markdown(result), encoding="utf-8")
+            (folder / "read.html").write_text(render_html.page(result), encoding="utf-8")
+            (folder / "read.json").write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            print(f"did_it_land: wrote read.md, read.html and read.json in {folder}", file=sys.stderr)
         print(json.dumps(result, indent=2, ensure_ascii=False) if args.json else to_markdown(result), end="" if not args.json else "\n")
         return 0
     if not args.prose:

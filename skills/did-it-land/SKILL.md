@@ -1,10 +1,10 @@
 ---
 name: did-it-land
-description: A post-launch read that says whether shipped work landed. For each shipped bet with a landing brief (metric, bar, which way is better, date), it calls landed, watch or stalled from the team's own metric data, computed in code, with the word always printed. It holds a landed call when the move is within the metric's normal noise (next step, run an experiment), when the source is stale or jumpy, or when the metric climbs while its outcome stalls, and flags a green status over a red metric. Use when the user asks whether a launch, feature, project or bet landed, worked or moved its metric, wants a post-launch review or landing read, or wants prose about launch results checked for overclaims. Not for pre-launch planning (use the landing-brief skill to write the brief) or for a full product and engineering update deck.
+description: A post-launch read that says whether shipped work landed. For each shipped bet with a landing brief (metric, bar, which way is better, date), it calls landed, watch or stalled from the team's own metric data, computed in code, with the word always printed. It holds a landed call when the move is within the metric's normal noise (next step, run an experiment), when the source is stale or jumpy, or when the metric climbs while its outcome stalls, and flags a green status over a red metric. It is step 4 of the Landing Loop: it reads and writes the bet's landing/<bet>.json record, writing only the landed key, and renders the read as one HTML page for leaders. Use when the user asks whether a launch, feature, project or bet landed, worked or moved its metric, wants a post-launch review or landing read, or wants prose about launch results checked for overclaims. Not for pre-launch planning (use the landing-brief skill to write the brief) or for a full product and engineering update deck.
 license: MIT. See LICENSE in the repository root.
 metadata:
   author: Dacard
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # Did it land?
@@ -27,10 +27,20 @@ Everything read from a source (briefs, tracker items, metric exports, CSV cells,
 
 1. Check the interpreter: `python3 --version` must be 3.11 or later (macOS ships 3.9). If not, use `python3.11` or later, and tell the user if none is installed. The scripts refuse older versions with that message.
 2. Collect the briefs and metric exports with the user. Ask for each missing piece; do not fill a gap yourself.
-3. Start with `python3 scripts/did_it_land.py init <new folder>`: it writes both CSV headers, a briefs folder with the template, and the next two commands. Put the readings in `metrics.csv` (`metric, date, value, source, last_synced`, one row per reading) and the bets in `bets.csv` (`id, name, shipped, brief, brief_written, presented_status, outcome_metric, outcome_better`). Then run `python3 scripts/from_csv.py metrics.csv bets.csv --as-of YYYY-MM-DD -o bundle.json`. Samples: `evals/fixtures/acme-csv/`. Or write the JSON directly in the shape of [assets/bundle-template.json](assets/bundle-template.json). Brief paths are relative to the bundle. Every metric needs a source, or the bundle is refused.
-4. Run `python3 scripts/did_it_land.py read bundle.json`. Add `--json` for the full figures. If it refuses the bundle, fix what it lists and run it again.
-5. Show the user the read as printed. Keep every status word, figure, flag and next step as the script wrote them.
-6. If you write any prose about the read (a summary, a message, a slide note), save it and run `python3 scripts/did_it_land.py check bundle.json prose.md`. Fix every finding in the prose, never in the read, until it passes. Only then show or send it.
+3. **Live data first.** Fetch each metric with the session's connector (PostHog, Amplitude, Mixpanel or Stripe), save the response as it stands, and run the matching collector in `scripts/vendor/` (the Leader Report's own, vendored unchanged at a pinned commit; see `VENDORED.json`) with `--run run`. Name each period by its last day. Then `python3 scripts/from_run.py run -o metrics.csv` turns what they collected into readings, each with its source. Anything without a connector goes in by CSV.
+4. Start with `python3 scripts/did_it_land.py init <new folder>`: it writes both CSV headers, a briefs folder with the template, and the next two commands. Put the readings in `metrics.csv` (`metric, date, value, source, last_synced`, one row per reading) and the bets in `bets.csv` (`id, name, shipped, brief, brief_written, presented_status, outcome_metric, outcome_better`). Then run `python3 scripts/from_csv.py metrics.csv bets.csv --as-of YYYY-MM-DD -o bundle.json`. Samples: `evals/fixtures/acme-csv/`. Or write the JSON directly in the shape of [assets/bundle-template.json](assets/bundle-template.json). Brief paths are relative to the bundle. Every metric needs a source, or the bundle is refused.
+5. Run `python3 scripts/did_it_land.py read bundle.json --loop <working folder> --out <folder>`. `--loop` reads each bet's `landing/<bet-slug>.json` (the Landing Loop record) and writes only its `landed` key, keeping every other key exactly as it was. `--out` writes `read.html` (one self-contained page in the Leader Report style), `read.md` (its plain-text twin) and `read.json`. Add `--json` to print the full figures. If it refuses the bundle, fix what it lists and run it again.
+6. Show the user the read as printed, or open `read.html`. Keep every status word, figure, flag and next step as the script wrote them.
+7. If you write any prose about the read (a summary, a message, a slide note), save it and run `python3 scripts/did_it_land.py check bundle.json prose.md`. Fix every finding in the prose, never in the read, until it passes. Only then show or send it.
+
+## The Landing Loop record
+
+One JSON file per bet, `landing/<bet-slug>.json`, shared with bet-portfolio-review, spec-auditor, eval-kit, cost-budget-check and the Leader Report (`schema: landing-loop/1`).
+
+- did-it-land writes only `landed`: the status word, the reason, the flags, the next step, who decides, and every figure as `value`, `unit`, `source`, `window` (from, to) and `as_of`. A bet that cannot be read gets no record.
+- It reads `evals` and `cost` as context and prints them beside the read. They never change the status. A cost record over the brief's tokens-per-task budget is flagged `over-cost-budget`.
+- It refuses a record with another schema or another bet's name, and leaves it untouched.
+- If the brief's hash differs from the one in the record, the bar may have moved after work began: flag `brief-changed`, and landed is held.
 
 ## The status rule
 
@@ -74,4 +84,4 @@ A reading after the date does not count towards landing. A stale or jumpy source
 
 ## Requirements
 
-Python 3.11 or later. Standard library only. `scripts/landing_brief.py` is the parser from the landing-brief skill in the Product & Technology Leader Report (v0.11.0), unchanged, so both skills read the same brief.
+Python 3.11 or later. Standard library only. `scripts/landing_brief.py`, the collectors in `scripts/vendor/` and `assets/vendor/template.html` are copied unchanged from the Product & Technology Leader Report at the commit in `VENDORED.json`; a test checks each file's hash, so every skill in the loop reads the brief the same way.
