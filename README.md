@@ -6,7 +6,7 @@ A free Claude skill that reads each shipped bet against its landing brief and sa
 
 **Why it matters:** shipping got cheap, so "we shipped it" says little. What matters is whether the metric moved past the bar by the date, and whether that move is real.
 
-**Where it sits:** step 4 of the Landing Loop. It reads the bet's `landing/<bet>.json` record, writes only its `landed` key, and renders the read as one HTML page in the Leader Report style.
+**Where it sits:** step 04 (Learn) of the Landing Loop. It reads the bet's `landing/<bet>.json` record, writes only its `landed` key, and renders the read as one HTML page in the Leader Report style.
 
 **How it works:** Python computes every call and every figure from your own exports, each with its source. Claude writes around the read and never changes it, and a check blocks prose that claims more than the data shows.
 

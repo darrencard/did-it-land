@@ -370,10 +370,10 @@
     {
       "id": "B1",
       "slug": "quote-drafting",
-      "name": "Quote drafting assistant",
+      "name": "Quote drafting",
       "shipped": "2026-09-07",
       "brief": "briefs/quote-drafting.md",
-      "brief_written": "2026-08-03",
+      "brief_written": "2026-07-20",
       "presented_status": "green",
       "outcome": {
         "metric": "Quote win rate",
@@ -386,13 +386,13 @@
       "name": "Invoice chasing",
       "shipped": "2026-10-05",
       "brief": "briefs/invoice-chasing.md",
-      "brief_written": "2026-08-31",
+      "brief_written": "2026-07-20",
       "presented_status": "amber"
     },
     {
       "id": "B3",
       "slug": "job-scheduler",
-      "name": "Mobile job scheduler",
+      "name": "Job scheduler",
       "shipped": "2026-08-03",
       "brief": "briefs/job-scheduler.md",
       "brief_written": "2026-06-29",
@@ -404,7 +404,7 @@
       "name": "Payment links",
       "shipped": "2026-10-19",
       "brief": "briefs/payment-links.md",
-      "brief_written": "2026-09-14",
+      "brief_written": "2026-07-20",
       "presented_status": "green"
     },
     {
@@ -413,7 +413,7 @@
       "name": "Automatic reminders",
       "shipped": "2026-09-21",
       "brief": "briefs/automatic-reminders.md",
-      "brief_written": "2026-08-17",
+      "brief_written": "2026-07-20",
       "presented_status": "green",
       "outcome": {
         "metric": "Invoices paid within 14 days",
@@ -426,16 +426,16 @@
       "name": "SMS reminders",
       "shipped": "2026-09-28",
       "brief": "briefs/sms-reminders.md",
-      "brief_written": "2026-08-24",
+      "brief_written": "2026-07-20",
       "presented_status": "green"
     },
     {
       "id": "B7",
       "slug": "auto-match",
-      "name": "Invoice auto-match",
+      "name": "Auto match",
       "shipped": "2026-10-05",
       "brief": "briefs/auto-match.md",
-      "brief_written": "2026-08-31",
+      "brief_written": "2026-07-20",
       "presented_status": "amber"
     }
   ]
