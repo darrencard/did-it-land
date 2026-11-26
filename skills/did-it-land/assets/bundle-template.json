@@ -75,6 +75,7 @@
       "name": "Quote drafting assistant",
       "shipped": "2026-09-07",
       "brief": "landing-brief-template.md",
+      "brief_written": "2026-08-03",
       "presented_status": "green",
       "outcome": {
         "metric": "Quote win rate",

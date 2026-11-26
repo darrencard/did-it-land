@@ -49,7 +49,7 @@ class Bundle:
         self.data = {
             "as_of": as_of,
             "metrics": {"Activation rate": metric},
-            "bets": [{"id": "T1", "name": "Test bet", "shipped": shipped, "brief": "b.md", **bet}],
+            "bets": [{"id": "T1", "name": "Test bet", "shipped": shipped, "brief": "b.md", "brief_written": "2026-07-01", **bet}],
         }
         self.path = root / "bundle.json"
         self.write()
@@ -228,6 +228,56 @@ class StatusRule(unittest.TestCase):
         b = bundle.bet()
         self.assertEqual(b["status"], "watch")
         self.assertIn("metric-up-outcome-flat", {f["code"] for f in b["flags"]})
+
+
+class Round1Checks(unittest.TestCase):
+    PRE = [40, 41, 40, 41]
+    RAMP = [46, 51, 55]
+
+    def test_brief_written_after_launch_holds_landed(self):
+        b = Bundle(readings(30, self.PRE + self.RAMP), shipped="2026-08-14", brief_written="2026-09-01").bet()
+        self.assertEqual(b["status"], "watch")
+        self.assertIn("brief-after-launch", {f["code"] for f in b["flags"]})
+        self.assertIn("new brief", b["next_step"])
+
+    def test_brief_date_unknown_is_flagged_not_held(self):
+        bundle = Bundle(readings(30, self.PRE + self.RAMP), shipped="2026-08-14")
+        del bundle.data["bets"][0]["brief_written"]
+        bundle.write()
+        b = bundle.bet()
+        self.assertEqual(b["status"], "landed")
+        self.assertIn("brief-date-unknown", {f["code"] for f in b["flags"]})
+
+    def test_verified_jump_clears_the_hold(self):
+        bundle = Bundle(readings(30, self.PRE + [55]), shipped="2026-08-14")
+        bundle.data["metrics"]["Activation rate"]["verified_jumps"] = [{"date": "2026-08-17", "note": "Data lead re-ran the query on 2026-08-18."}]
+        bundle.write()
+        b = bundle.bet()
+        self.assertEqual(b["status"], "landed")
+        self.assertIn("jump-verified", {f["code"] for f in b["flags"]})
+
+    def test_a_verified_jump_needs_a_note(self):
+        bundle = Bundle(readings(30, self.PRE + [55]), shipped="2026-08-14")
+        bundle.data["metrics"]["Activation rate"]["verified_jumps"] = [{"date": "2026-08-17", "note": ""}]
+        bundle.write()
+        with self.assertRaises(did_it_land.BundleError):
+            bundle.bet()
+
+    def test_slow_build_is_judged_by_level_not_step(self):
+        # Each weekly step is small, but the level is far outside the pre-launch range.
+        b = Bundle(readings(30, [40, 42, 39, 41, 42, 44, 46, 48, 50, 52]), shipped="2026-08-28").bet()
+        self.assertEqual(b["status"], "landed")
+        self.assertGreater(b["figures"]["move"]["z"], 2)
+
+    def test_thin_baseline_is_flagged_not_held(self):
+        b = Bundle(readings(30, self.PRE + self.RAMP), shipped="2026-08-14").bet()
+        self.assertEqual(b["status"], "landed")
+        self.assertIn("thin-baseline", {f["code"] for f in b["flags"]})
+
+    def test_level_inside_the_old_range_is_within_noise(self):
+        b = Bundle(readings(30, [48, 52, 47, 53, 51]), shipped="2026-08-14", bar="50").bet()
+        self.assertEqual(b["status"], "watch")
+        self.assertIn("within-noise", {f["code"] for f in b["flags"]})
 
 
 class SourceTextIsData(unittest.TestCase):

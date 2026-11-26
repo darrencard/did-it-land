@@ -11,7 +11,24 @@ A free Claude skill that reads each shipped bet against its landing brief and sa
 ## Install: paste this into Claude Code
 
 ```text
-Install the did-it-land skill from https://github.com/darrencard/did-it-land: clone it, run python3 -m unittest discover -s evals to check it, and copy skills/did-it-land into ~/.claude/skills/did-it-land. Then run a post-launch read on my shipped bets: find each one's landing brief and its metric data in the tools connected to this session, ask me only for what you cannot find, and show the read exactly as the script prints it.
+Install the did-it-land skill from https://github.com/darrencard/did-it-land: clone it, find a Python 3.11 or later on this machine (macOS python3 is often 3.9), run the tests with it (python -m unittest discover -s evals), and copy skills/did-it-land into ~/.claude/skills/did-it-land. Then run a post-launch read on my shipped bets: find each one's landing brief and its metric readings in the tools connected to this session, put them in the two CSVs the skill describes, ask me only for what you cannot find, and show the read exactly as the script prints it.
+```
+
+You need Python 3.11 or later; the scripts say so and stop on anything older. Nothing else to install.
+
+## What you get
+
+One table, then one section per bet. From the sample company:
+
+```text
+| Payment links | watch | Payment link conversion | 18.1% (2026-11-23) | 18%, 2026-11-30 | Illustrative billing export |
+
+- watch. Past the bar of 18%, but the call is held: within-noise.
+- Flag, within-noise: 18.1% is 1.48 times the pre-launch spread (0.8) from the pre-launch
+  mean (16.92%), under the 2 needed. Within noise: run an experiment.
+- Next step: Run an experiment before calling it: hold the bet back from a random group and
+  compare Payment link conversion between the two groups. Correct the status shown in the tracker.
+  Decides: Head of Product, Payments squad.
 ```
 
 ## What it calls
@@ -28,14 +45,17 @@ Install the did-it-land skill from https://github.com/darrencard/did-it-land: cl
 - **Stale or jumpy source:** no fresh reading, or a step far larger than usual. Verify before trusting it.
 - **Metric up, outcome down:** the number improves while the result it should move does not.
 - **Green over red:** the tracker shows green while the read is stalled.
+- **Bar set after launch:** a brief dated after the ship date is not a test, so it cannot land.
 
-## Try it on the sample company
+## Try it in one minute
 
 Acme is invented: invoicing software for trades businesses, eight shipped bets, every figure illustrative.
 
 ```bash
-python3 skills/did-it-land/scripts/did_it_land.py read evals/fixtures/acme/bundle.json
+python3.12 skills/did-it-land/scripts/did_it_land.py read evals/fixtures/acme/bundle.json
 ```
+
+Your own data: `did_it_land.py init my-read` sets up two CSVs (one row per metric reading, one row per bet) and a briefs folder, and prints the next two commands. Samples are in `evals/fixtures/acme-csv/`.
 
 ## Go deeper
 

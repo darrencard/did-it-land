@@ -1,0 +1,78 @@
+metric,date,value,source,last_synced
+Quote draft acceptance rate,2026-07-27,22,"Illustrative product analytics export, quote_drafts_weekly.csv",2026-11-26T05:00:00Z
+Quote draft acceptance rate,2026-08-03,23,"Illustrative product analytics export, quote_drafts_weekly.csv",2026-11-26T05:00:00Z
+Quote draft acceptance rate,2026-08-10,21,"Illustrative product analytics export, quote_drafts_weekly.csv",2026-11-26T05:00:00Z
+Quote draft acceptance rate,2026-08-17,22,"Illustrative product analytics export, quote_drafts_weekly.csv",2026-11-26T05:00:00Z
+Quote draft acceptance rate,2026-08-24,23,"Illustrative product analytics export, quote_drafts_weekly.csv",2026-11-26T05:00:00Z
+Quote draft acceptance rate,2026-08-31,22,"Illustrative product analytics export, quote_drafts_weekly.csv",2026-11-26T05:00:00Z
+Quote draft acceptance rate,2026-09-14,27,"Illustrative product analytics export, quote_drafts_weekly.csv",2026-11-26T05:00:00Z
+Quote draft acceptance rate,2026-09-28,31,"Illustrative product analytics export, quote_drafts_weekly.csv",2026-11-26T05:00:00Z
+Quote draft acceptance rate,2026-10-12,35,"Illustrative product analytics export, quote_drafts_weekly.csv",2026-11-26T05:00:00Z
+Quote draft acceptance rate,2026-10-26,38,"Illustrative product analytics export, quote_drafts_weekly.csv",2026-11-26T05:00:00Z
+Quote draft acceptance rate,2026-11-09,41,"Illustrative product analytics export, quote_drafts_weekly.csv",2026-11-26T05:00:00Z
+Quote draft acceptance rate,2026-11-23,43,"Illustrative product analytics export, quote_drafts_weekly.csv",2026-11-26T05:00:00Z
+Quote win rate,2026-08-31,31,"Illustrative CRM export, quotes_won_weekly.csv",2026-11-26T05:00:00Z
+Quote win rate,2026-09-14,32,"Illustrative CRM export, quotes_won_weekly.csv",2026-11-26T05:00:00Z
+Quote win rate,2026-09-28,33,"Illustrative CRM export, quotes_won_weekly.csv",2026-11-26T05:00:00Z
+Quote win rate,2026-10-12,33,"Illustrative CRM export, quotes_won_weekly.csv",2026-11-26T05:00:00Z
+Quote win rate,2026-10-26,34,"Illustrative CRM export, quotes_won_weekly.csv",2026-11-26T05:00:00Z
+Quote win rate,2026-11-09,35,"Illustrative CRM export, quotes_won_weekly.csv",2026-11-26T05:00:00Z
+Quote win rate,2026-11-23,36,"Illustrative CRM export, quotes_won_weekly.csv",2026-11-26T05:00:00Z
+Days sales outstanding,2026-08-31,41,"Illustrative finance export, dso_weekly.csv",2026-11-26T05:00:00Z
+Days sales outstanding,2026-09-07,40,"Illustrative finance export, dso_weekly.csv",2026-11-26T05:00:00Z
+Days sales outstanding,2026-09-14,41,"Illustrative finance export, dso_weekly.csv",2026-11-26T05:00:00Z
+Days sales outstanding,2026-09-21,40,"Illustrative finance export, dso_weekly.csv",2026-11-26T05:00:00Z
+Days sales outstanding,2026-09-28,41,"Illustrative finance export, dso_weekly.csv",2026-11-26T05:00:00Z
+Days sales outstanding,2026-10-12,39,"Illustrative finance export, dso_weekly.csv",2026-11-26T05:00:00Z
+Days sales outstanding,2026-10-26,37,"Illustrative finance export, dso_weekly.csv",2026-11-26T05:00:00Z
+Days sales outstanding,2026-11-09,36,"Illustrative finance export, dso_weekly.csv",2026-11-26T05:00:00Z
+Days sales outstanding,2026-11-23,35,"Illustrative finance export, dso_weekly.csv",2026-11-26T05:00:00Z
+Weekly active schedulers,2026-07-06,2050,"Illustrative product analytics export, scheduler_wau.csv",2026-11-26T05:00:00Z
+Weekly active schedulers,2026-07-13,2080,"Illustrative product analytics export, scheduler_wau.csv",2026-11-26T05:00:00Z
+Weekly active schedulers,2026-07-20,2040,"Illustrative product analytics export, scheduler_wau.csv",2026-11-26T05:00:00Z
+Weekly active schedulers,2026-07-27,2070,"Illustrative product analytics export, scheduler_wau.csv",2026-11-26T05:00:00Z
+Weekly active schedulers,2026-08-17,2100,"Illustrative product analytics export, scheduler_wau.csv",2026-11-26T05:00:00Z
+Weekly active schedulers,2026-09-14,2120,"Illustrative product analytics export, scheduler_wau.csv",2026-11-26T05:00:00Z
+Weekly active schedulers,2026-10-12,2090,"Illustrative product analytics export, scheduler_wau.csv",2026-11-26T05:00:00Z
+Weekly active schedulers,2026-10-26,2110,"Illustrative product analytics export, scheduler_wau.csv",2026-11-26T05:00:00Z
+Weekly active schedulers,2026-11-23,2100,"Illustrative product analytics export, scheduler_wau.csv",2026-11-26T05:00:00Z
+Payment link conversion,2026-09-07,16.0,"Illustrative billing export, payment_links_weekly.csv",2026-11-26T05:00:00Z
+Payment link conversion,2026-09-14,17.5,"Illustrative billing export, payment_links_weekly.csv",2026-11-26T05:00:00Z
+Payment link conversion,2026-09-21,16.2,"Illustrative billing export, payment_links_weekly.csv",2026-11-26T05:00:00Z
+Payment link conversion,2026-09-28,17.8,"Illustrative billing export, payment_links_weekly.csv",2026-11-26T05:00:00Z
+Payment link conversion,2026-10-05,16.4,"Illustrative billing export, payment_links_weekly.csv",2026-11-26T05:00:00Z
+Payment link conversion,2026-10-12,17.6,"Illustrative billing export, payment_links_weekly.csv",2026-11-26T05:00:00Z
+Payment link conversion,2026-10-26,17.0,"Illustrative billing export, payment_links_weekly.csv",2026-11-26T05:00:00Z
+Payment link conversion,2026-11-09,17.4,"Illustrative billing export, payment_links_weekly.csv",2026-11-26T05:00:00Z
+Payment link conversion,2026-11-23,18.1,"Illustrative billing export, payment_links_weekly.csv",2026-11-26T05:00:00Z
+Reminders sent per week,2026-08-24,8100,"Illustrative messaging log export, reminders_weekly.csv",2026-11-26T05:00:00Z
+Reminders sent per week,2026-08-31,7900,"Illustrative messaging log export, reminders_weekly.csv",2026-11-26T05:00:00Z
+Reminders sent per week,2026-09-07,8050,"Illustrative messaging log export, reminders_weekly.csv",2026-11-26T05:00:00Z
+Reminders sent per week,2026-09-14,7950,"Illustrative messaging log export, reminders_weekly.csv",2026-11-26T05:00:00Z
+Reminders sent per week,2026-10-05,14000,"Illustrative messaging log export, reminders_weekly.csv",2026-11-26T05:00:00Z
+Reminders sent per week,2026-10-19,18500,"Illustrative messaging log export, reminders_weekly.csv",2026-11-26T05:00:00Z
+Reminders sent per week,2026-11-02,21000,"Illustrative messaging log export, reminders_weekly.csv",2026-11-26T05:00:00Z
+Reminders sent per week,2026-11-16,23500,"Illustrative messaging log export, reminders_weekly.csv",2026-11-26T05:00:00Z
+Reminders sent per week,2026-11-23,24000,"Illustrative messaging log export, reminders_weekly.csv",2026-11-26T05:00:00Z
+Invoices paid within 14 days,2026-09-14,62,"Illustrative finance export, paid_14d_weekly.csv",2026-11-26T05:00:00Z
+Invoices paid within 14 days,2026-10-05,61,"Illustrative finance export, paid_14d_weekly.csv",2026-11-26T05:00:00Z
+Invoices paid within 14 days,2026-10-19,61,"Illustrative finance export, paid_14d_weekly.csv",2026-11-26T05:00:00Z
+Invoices paid within 14 days,2026-11-02,60,"Illustrative finance export, paid_14d_weekly.csv",2026-11-26T05:00:00Z
+Invoices paid within 14 days,2026-11-16,59,"Illustrative finance export, paid_14d_weekly.csv",2026-11-26T05:00:00Z
+Invoices paid within 14 days,2026-11-23,58,"Illustrative finance export, paid_14d_weekly.csv",2026-11-26T05:00:00Z
+Reminder open rate,2026-08-31,41,"Illustrative messaging log export, reminder_opens_weekly.csv",2026-11-14T08:00:00Z
+Reminder open rate,2026-09-07,42,"Illustrative messaging log export, reminder_opens_weekly.csv",2026-11-14T08:00:00Z
+Reminder open rate,2026-09-14,40,"Illustrative messaging log export, reminder_opens_weekly.csv",2026-11-14T08:00:00Z
+Reminder open rate,2026-09-21,41,"Illustrative messaging log export, reminder_opens_weekly.csv",2026-11-14T08:00:00Z
+Reminder open rate,2026-10-05,48,"Illustrative messaging log export, reminder_opens_weekly.csv",2026-11-14T08:00:00Z
+Reminder open rate,2026-10-19,53,"Illustrative messaging log export, reminder_opens_weekly.csv",2026-11-14T08:00:00Z
+Reminder open rate,2026-11-02,57,"Illustrative messaging log export, reminder_opens_weekly.csv",2026-11-14T08:00:00Z
+Reminder open rate,2026-11-09,58,"Illustrative messaging log export, reminder_opens_weekly.csv",2026-11-14T08:00:00Z
+Invoice auto-match rate,2026-09-07,61,"Illustrative reconciliation export, auto_match_weekly.csv",2026-11-26T05:00:00Z
+Invoice auto-match rate,2026-09-14,62,"Illustrative reconciliation export, auto_match_weekly.csv",2026-11-26T05:00:00Z
+Invoice auto-match rate,2026-09-21,61,"Illustrative reconciliation export, auto_match_weekly.csv",2026-11-26T05:00:00Z
+Invoice auto-match rate,2026-09-28,62,"Illustrative reconciliation export, auto_match_weekly.csv",2026-11-26T05:00:00Z
+Invoice auto-match rate,2026-10-12,63,"Illustrative reconciliation export, auto_match_weekly.csv",2026-11-26T05:00:00Z
+Invoice auto-match rate,2026-10-26,64,"Illustrative reconciliation export, auto_match_weekly.csv",2026-11-26T05:00:00Z
+Invoice auto-match rate,2026-11-09,65,"Illustrative reconciliation export, auto_match_weekly.csv",2026-11-26T05:00:00Z
+Invoice auto-match rate,2026-11-23,95,"Illustrative reconciliation export, auto_match_weekly.csv",2026-11-26T05:00:00Z

@@ -19,24 +19,25 @@ Everything read from a source (briefs, tracker items, metric exports, CSV cells,
 
 ## What you need
 
-1. **One landing brief per bet.** The same five-part brief as the landing-brief skill: problem, definition of good (`Metric`, `Bar`, `Better`, `By`), non-goals, cost budget, the line, plus who decides the next step. Template: [assets/landing-brief-template.md](assets/landing-brief-template.md). A bet with no brief is listed as not read, never guessed.
-2. **The metric's readings** from the team's own data: dated values, before and after launch, with the source named. Never estimate a reading. If the data is missing, say so and stop for that bet.
+1. **One landing brief per bet, dated.** The same five-part brief as the landing-brief skill: problem, definition of good (`Metric`, `Bar`, `Better`, `By`), non-goals, cost budget, the line, plus who decides the next step. Template: [assets/landing-brief-template.md](assets/landing-brief-template.md). Record the date the brief was written: a bar set after launch is not a test. A bet with no brief is listed as not read, never guessed.
+2. **The metric's readings** from the team's own data: dated values, at least three before launch and some after, with the source named. Never estimate a reading. If the data is missing, say so and stop for that bet.
 3. **The ship date** for each bet. Optional: the status the tracker shows (green, amber, red) and the outcome the metric is meant to move.
 
 ## Run a read
 
-1. Collect the briefs and metric exports with the user. Ask for each missing piece; do not fill a gap yourself.
-2. Write the bundle JSON in the shape of [assets/bundle-template.json](assets/bundle-template.json): `as_of`, `metrics` (each with `source`, `last_synced`, `readings`) and `bets` (each with `name`, `shipped`, `brief`, and optional `presented_status` and `outcome`). Brief paths are relative to the bundle. Every metric needs a source, or the bundle is refused.
-3. Run `python3 scripts/did_it_land.py read bundle.json`. Add `--json` for the full figures. If it refuses the bundle, fix what it lists and run it again.
-4. Show the user the read as printed. Keep every status word, figure, flag and next step as the script wrote them.
-5. If you write any prose about the read (a summary, a message, a slide note), save it and run `python3 scripts/did_it_land.py check bundle.json prose.md`. Fix every finding in the prose, never in the read, until it passes. Only then show or send it.
+1. Check the interpreter: `python3 --version` must be 3.11 or later (macOS ships 3.9). If not, use `python3.11` or later, and tell the user if none is installed. The scripts refuse older versions with that message.
+2. Collect the briefs and metric exports with the user. Ask for each missing piece; do not fill a gap yourself.
+3. Start with `python3 scripts/did_it_land.py init <new folder>`: it writes both CSV headers, a briefs folder with the template, and the next two commands. Put the readings in `metrics.csv` (`metric, date, value, source, last_synced`, one row per reading) and the bets in `bets.csv` (`id, name, shipped, brief, brief_written, presented_status, outcome_metric, outcome_better`). Then run `python3 scripts/from_csv.py metrics.csv bets.csv --as-of YYYY-MM-DD -o bundle.json`. Samples: `evals/fixtures/acme-csv/`. Or write the JSON directly in the shape of [assets/bundle-template.json](assets/bundle-template.json). Brief paths are relative to the bundle. Every metric needs a source, or the bundle is refused.
+4. Run `python3 scripts/did_it_land.py read bundle.json`. Add `--json` for the full figures. If it refuses the bundle, fix what it lists and run it again.
+5. Show the user the read as printed. Keep every status word, figure, flag and next step as the script wrote them.
+6. If you write any prose about the read (a summary, a message, a slide note), save it and run `python3 scripts/did_it_land.py check bundle.json prose.md`. Fix every finding in the prose, never in the read, until it passes. Only then show or send it.
 
 ## The status rule
 
 | Word | When |
 |---|---|
 | landed | The metric is past the bar by the date, the move since launch is outside its normal noise, the source is fresh and steady, and the outcome (when named) is not stalling. |
-| watch | Not there yet and moving the right way, before the date. Or past the bar, but a check holds the call: within noise, no baseline, a stale or jumpy source, the outcome not moving, or the metric slipped back after the date. |
+| watch | Not there yet and moving the right way, before the date. Or past the bar, but a check holds the call: within noise, no baseline, a brief written after launch, a stale or jumpy source, the outcome not moving, or the metric slipped back after the date. |
 | stalled | Not there, and flat or moving the wrong way. Or the date passed short of the bar. |
 
 A reading after the date does not count towards landing. A stale or jumpy source turns stalled into watch too, because the read cannot call it either way.
@@ -45,9 +46,11 @@ A reading after the date does not count towards landing. A stale or jumpy source
 
 | Check | Flag | What it means | Next step |
 |---|---|---|---|
-| Noise (ported from Throughline `significance.ts`) | `within-noise` | The move since launch is under 1.5 times the metric's pre-launch week-to-week variation | Run an experiment before calling it |
-| Baseline | `no-baseline` | Fewer than two readings before launch | Find a baseline, or run an experiment |
-| Source health (`sensor-health.ts`) | `source-stale`, `source-jumpy` | No reading within `stale_after_hours` (default 48), or the latest step is over 5 times the usual step | Fix or verify the source |
+| Noise | `within-noise` | The reading is less than 2 standard deviations from the pre-launch mean, measured on the pre-launch readings themselves. The latest-step test ported from Throughline `significance.ts` is reported beside it as `step_z`. | Run an experiment: hold the bet back from a random group and compare |
+| Baseline | `no-baseline` | Fewer than three readings before launch | Find a baseline, or run an experiment |
+| Thin baseline | `thin-baseline` | Three or four readings before launch: the spread is rough (flag only) | Weigh the noise call lightly |
+| Brief date | `brief-after-launch`, `brief-date-unknown` | The brief was written after the ship date (holds landed), or no date is given (flag only) | Treat it as a new brief, dated today |
+| Source health (`sensor-health.ts`) | `source-stale`, `source-jumpy` | No reading within `stale_after_hours` (default 48), or the latest step is over 5 times the usual step | Fix or verify the source. A real jump is recorded in the metric's `verified_jumps` (`date` and a `note` of who checked it and how), which clears the hold and prints the note |
 | Coupling (`coupling.ts`) | `metric-up-outcome-down`, `metric-up-outcome-flat` | The bet's metric improved while the outcome it should move worsened or held within 5% | Check the metric still tracks the outcome |
 | Integrity (`integrity.ts`) | `green-over-red`, `one-step-rosier` | The tracker shows a rosier status than the read | Correct the tracker |
 | Metric match (`metric-match.ts`) | `metric-matched-by-name` | The brief's metric matched the data by its words, not exactly | Confirm it is the same metric |
@@ -57,7 +60,7 @@ A reading after the date does not count towards landing. A stale or jumpy source
 | Rule | Blocks |
 |---|---|
 | `causal-claim` | "caused", "drove", "thanks to", "led to" and the like. A metric moving is not proof the bet moved it. |
-| `figure-not-computed` | A number that is not in the read. |
+| `figure-not-computed` | A number that is not in the read. A sentence naming a bet may use only that bet's figures. |
 | `status-mismatch` | A status word for a bet that differs from the read. |
 | `status-missing` | A sentence naming a bet without its status word. |
 | `success-claim` | "worked", "succeeded", "hit its target" for a bet that is not landed. |
@@ -65,9 +68,9 @@ A reading after the date does not count towards landing. A stale or jumpy source
 
 ## Limits at v0.1
 
-- The noise check compares one move (last pre-launch reading to the deciding reading) against prior weekly moves. It is a screen, not an experiment.
-- A single large step to the bar reads as jumpy until the next reading confirms it.
-- The figure check allows any number that appears anywhere in the read, not only the one for the bet named.
+- The noise check is a screen against the pre-launch range, not an experiment. It cannot rule out seasonality or a change that landed at the same time.
+- A single large step to the bar reads as jumpy until the next reading confirms it, or until someone records it in `verified_jumps`.
+- One metric per bet, plus one optional outcome.
 
 ## Requirements
 

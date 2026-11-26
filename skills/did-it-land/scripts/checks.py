@@ -4,6 +4,7 @@ Ported from Throughline's analysis layer (TypeScript), kept close to the origina
 
   same_metric, match_metric   metric-match.ts and the token match in landing.ts
   assess_significance         significance.ts: is the latest move inside the metric's normal noise?
+  assess_launch_level         new here: is the level after launch outside the range the metric held before it?
   assess_sensor               sensor-health.ts: is the source stale, or did it jump?
   classify_coupling           coupling.ts: is the metric climbing while its outcome stalls?
   classify_integrity          integrity.ts: does a green status sit over a red metric?
@@ -21,6 +22,10 @@ from dataclasses import dataclass
 NOISE_Z = 1.5
 # A latest step more than this many times the median prior step is a jump (sensor-health.ts).
 JUMP_FACTOR = 5
+# A post-launch level less than this many standard deviations from the pre-launch mean is within noise.
+LEVEL_Z = 2.0
+# Pre-launch readings needed before the pre-launch range means anything.
+MIN_BASELINE = 3
 # Hours without a fresh reading before a source is stale, unless the metric sets its own (sensor-health.ts).
 STALE_AFTER_HOURS = 48
 # An outcome move smaller than this share of its own magnitude reads as flat (coupling.ts).
@@ -93,6 +98,34 @@ def assess_significance(trend: list[float] | None) -> Significance | None:
     within = abs(z) < NOISE_Z
     direction = "up" if latest > 1e-4 else "down" if latest < -1e-4 else "flat"
     return Significance(_round(latest), _round(sigma), _round(z), within, within, direction)
+
+
+@dataclass(frozen=True)
+class LaunchLevel:
+    baseline_mean: float
+    baseline_sd: float  # the spread of the pre-launch readings themselves
+    delta: float  # the reading being judged, minus the pre-launch mean
+    z: float
+    within_noise: bool
+    n_baseline: int
+
+
+def assess_launch_level(pre: list[float], value: float) -> LaunchLevel | None:
+    """Is a post-launch reading outside the range the metric held before launch?
+
+    significance.ts compares one step against prior steps, which overstates a move that built up over many weeks.
+    This compares the level instead: the reading against the mean and spread of the pre-launch readings. A flat
+    baseline (no spread) counts any change as outside noise. None with fewer than MIN_BASELINE readings.
+    """
+    if len(pre) < MIN_BASELINE:
+        return None
+    mean = sum(pre) / len(pre)
+    sd = math.sqrt(sum((v - mean) ** 2 for v in pre) / (len(pre) - 1))
+    delta = value - mean
+    # A flat baseline has no spread, so any change at all is outside it.
+    flat_z = 0.0 if delta == 0 else math.copysign(float("inf"), delta)
+    z = flat_z if sd == 0 else delta / sd
+    return LaunchLevel(_round(mean), _round(sd), _round(delta), z if math.isinf(z) else _round(z), abs(z) < LEVEL_Z, len(pre))
 
 
 # ---------------------------------------------------------------- sensor-health.ts

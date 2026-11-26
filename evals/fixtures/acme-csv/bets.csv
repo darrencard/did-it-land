@@ -1,0 +1,9 @@
+id,name,shipped,brief,brief_written,presented_status,outcome_metric,outcome_better
+B1,Quote drafting assistant,2026-09-07,briefs/quote-drafting.md,2026-08-03,green,Quote win rate,higher
+B2,Invoice chasing,2026-10-05,briefs/invoice-chasing.md,2026-08-31,amber,,
+B3,Mobile job scheduler,2026-08-03,briefs/job-scheduler.md,2026-06-29,green,,
+B4,Payment links,2026-10-19,briefs/payment-links.md,2026-09-14,green,,
+B5,Automatic reminders,2026-09-21,briefs/automatic-reminders.md,2026-08-17,green,Invoices paid within 14 days,higher
+B6,SMS reminders,2026-09-28,briefs/sms-reminders.md,2026-08-24,green,,
+B7,Invoice auto-match,2026-10-05,briefs/auto-match.md,2026-08-31,amber,,
+B8,Customer portal redesign,2026-10-12,,,green,,

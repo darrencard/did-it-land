@@ -8,6 +8,7 @@ import unittest
 from _path import ROOT, SCRIPTS
 
 # isort: split
+import did_it_land
 import landing_brief
 
 TEXT = [p for p in ROOT.rglob("*") if p.is_file() and p.suffix in {".md", ".py", ".json", ".toml", ".yml", ".txt"} and ".git" not in p.parts and ".ruff_cache" not in p.parts]
@@ -37,6 +38,15 @@ class Wording(unittest.TestCase):
             self.assertTrue(m["source"].startswith("Illustrative"))
         for p in (ROOT / "evals/fixtures/acme/briefs").glob("*.md"):
             self.assertIn("Illustrative", p.read_text(encoding="utf-8"))
+
+
+class ReadmeSample(unittest.TestCase):
+    def test_the_readme_sample_is_real_output(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        block = readme.split("## What you get", 1)[1].split("```text", 1)[1].split("```", 1)[0]
+        output = " ".join(did_it_land.to_markdown(did_it_land.read(ROOT / "evals/fixtures/acme/bundle.json")).replace("**", "").split())
+        for item in block.split("\n- ")[1:]:
+            self.assertIn(" ".join(item.split()), output)
 
 
 class Versions(unittest.TestCase):

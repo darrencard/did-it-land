@@ -34,6 +34,11 @@ class Overclaims(unittest.TestCase):
     def test_figure_not_computed(self):
         self.assertIn("figure-not-computed", rules("Invoice chasing is watch, with DSO down 12 days."))
 
+    def test_a_figure_from_another_bet_is_blocked(self):
+        # 43 is the quote drafting figure, not the invoice chasing one.
+        self.assertIn("figure-not-computed", rules("Invoice chasing is watch at 43."))
+        self.assertEqual(rules("Quote drafting assistant landed at 43%."), set())
+
     def test_status_mismatch(self):
         self.assertIn("status-mismatch", rules("Payment links landed this month."))
 

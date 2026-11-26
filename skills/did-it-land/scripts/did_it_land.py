@@ -36,11 +36,15 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import math
 import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+if sys.version_info < (3, 11):  # noqa: UP036  (the guard exists for older interpreters)
+    raise SystemExit(f"did_it_land: needs Python 3.11 or later; this is {sys.version.split()[0]}. On macOS, install one (python.org or Homebrew) and run python3.11 or later.")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -48,6 +52,11 @@ import checks  # noqa: E402
 import landing_brief  # noqa: E402
 
 STATUSES = ("landed", "watch", "stalled")
+# Under this many pre-launch readings the spread is a rough estimate; the read says so but does not hold the call.
+THIN_BASELINE = 5
+ASSETS = Path(__file__).resolve().parent.parent / "assets"
+METRICS_CSV_HEADER = "metric,date,value,source,last_synced\n"
+BETS_CSV_HEADER = "id,name,shipped,brief,brief_written,presented_status,outcome_metric,outcome_better\n"
 MAX_BUNDLE_BYTES = 5_000_000
 CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
 
@@ -69,6 +78,7 @@ class Metric:
     readings: list[Reading]
     last_synced: dt.datetime | None
     stale_after_hours: float
+    verified_jumps: dict[dt.date, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -152,7 +162,16 @@ def load_bundle(path: Path) -> tuple[dict[str, Any], dict[str, Metric], dt.datet
         except (TypeError, ValueError):
             problems.append(f"metric {label} stale_after_hours is not a number.")
             stale_after = checks.STALE_AFTER_HOURS
-        metrics[str(name)] = Metric(str(name), clean(m.get("source", ""), 200), sorted(readings, key=lambda r: r.date), synced, stale_after)
+        verified: dict[dt.date, str] = {}
+        for v in m.get("verified_jumps") or []:
+            try:
+                note = str(v["note"]).strip()
+                if not note:
+                    raise ValueError
+                verified[dt.date.fromisoformat(str(v["date"]))] = clean(note, 200)
+            except (KeyError, TypeError, ValueError):
+                problems.append(f'metric {label} has a verified jump that is not {{"date": "YYYY-MM-DD", "note": who checked it and how}}.')
+        metrics[str(name)] = Metric(str(name), clean(m.get("source", ""), 200), sorted(readings, key=lambda r: r.date), synced, stale_after, verified)
     bets = data.get("bets")
     if not isinstance(bets, list) or not bets:
         problems.append("bets is missing or empty.")
@@ -161,6 +180,11 @@ def load_bundle(path: Path) -> tuple[dict[str, Any], dict[str, Metric], dt.datet
             if not isinstance(b, dict) or not b.get("name"):
                 problems.append(f"bet {i + 1} has no name.")
                 continue
+            if b.get("brief_written") is not None:
+                try:
+                    dt.date.fromisoformat(str(b["brief_written"]))
+                except ValueError:
+                    problems.append(f"bet {clean(b['name'], 80)} brief_written must be YYYY-MM-DD.")
             if b.get("presented_status") not in (None, "green", "amber", "red"):
                 problems.append(f"bet {clean(b['name'], 80)} presented_status must be green, amber or red.")
             out = b.get("outcome")
@@ -259,36 +283,65 @@ def read_bet(bet: dict[str, Any], metrics: dict[str, Metric], as_of: dt.datetime
     figures["source_health"] = {"state": sensor.state, "hours_since_sync": None if fresh_hours is None else round(fresh_hours, 1)}
     if metric.last_synced is None:
         out.flags.append({"code": "no-sync-time", "text": "The bundle gives no last_synced time for this source, so freshness is not checked."})
+    if sensor.state == "jumpy" and current.date in metric.verified_jumps:
+        out.flags.append({"code": "jump-verified", "text": f"The latest step is large, and was checked: {metric.verified_jumps[current.date]}"})
+        sensor = checks.SensorHealth("healthy", "The jump was verified.")
+        figures["source_health"]["state"] = "healthy (jump verified)"
     if sensor.state != "healthy":
         out.flags.append({"code": f"source-{sensor.state}", "text": sensor.reason})
 
-    # Check 2: is the move since launch outside the metric's normal noise? (significance.ts)
+    # Was the bar set before the result was known? A bar written after launch is not a test.
+    written = bet.get("brief_written")
+    if written is None:
+        out.flags.append({"code": "brief-date-unknown", "text": "The bundle gives no brief_written date, so the read cannot show the bar was set before launch."})
+    elif dt.date.fromisoformat(str(written)) > shipped:
+        out.flags.append({"code": "brief-after-launch", "text": f"The brief was written on {written}, after the bet shipped on {shipped}. A bar set after launch is not a test."})
+
+    # Check 2: is the level since launch outside the range the metric held before it?
+    # The level test decides; the ported step test (significance.ts) is reported alongside it.
     pre = [r.value for r in readings if r.date < shipped]
-    sig = checks.assess_significance(pre + [(deciding or current).value]) if pre else None
-    if sig is None:
-        out.flags.append({"code": "no-baseline", "text": "Fewer than two readings before launch, so there is no baseline noise to judge the move against."})
+    to_value = (deciding or current).value
+    level = checks.assess_launch_level(pre, to_value)
+    step = checks.assess_significance(pre + [to_value]) if pre else None
+    if level is None:
+        out.flags.append(
+            {
+                "code": "no-baseline",
+                "text": f"{len(pre)} reading(s) before launch, under the {checks.MIN_BASELINE} needed, so there is no baseline to judge the move against.",
+            }
+        )
     else:
-        to_value = (deciding or current).value
+        flat_baseline = math.isinf(level.z)
+        if level.n_baseline < THIN_BASELINE:
+            out.flags.append(
+                {
+                    "code": "thin-baseline",
+                    "text": f"The pre-launch spread comes from {level.n_baseline} readings, so the noise band itself is rough. Weigh the noise call lightly.",
+                }
+            )
         figures["move"] = {
-            "from": pre[-1],
+            "baseline_mean": level.baseline_mean,
+            "baseline_sd": level.baseline_sd,
+            "baseline_n": level.n_baseline,
+            "baseline_shown": brief.show(level.baseline_mean),
             "to": to_value,
-            "from_shown": brief.show(pre[-1]),
             "to_shown": brief.show(to_value),
-            "delta": sig.latest_delta,
-            "noise_sigma": sig.sigma,
-            "z": sig.z,
+            "delta": level.delta,
+            "z": None if flat_baseline else level.z,
+            "flat_baseline": flat_baseline,
+            "step_z": step.z if step else None,
         }
-        good_way = sig.direction == ("up" if brief.higher_is_better else "down")
-        if sig.within_noise and status != "stalled":
+        good_way = (level.delta > 0) == brief.higher_is_better and level.delta != 0
+        if level.within_noise and status != "stalled":
             out.flags.append(
                 {
                     "code": "within-noise",
-                    "text": f"The move since launch ({brief.show(pre[-1])} to {brief.show((deciding or current).value)}) is {abs(sig.z):g} times the "
-                    f"pre-launch noise ({sig.sigma:g}), under the {checks.NOISE_Z:g} needed. Within noise: run an experiment.",
+                    "text": f"{brief.show(to_value)} is {abs(level.z):g} times the pre-launch spread ({level.baseline_sd:g}) from the pre-launch mean "
+                    f"({brief.show(level.baseline_mean)}), under the {checks.LEVEL_Z:g} needed. Within noise: run an experiment.",
                 }
             )
-        elif not sig.within_noise and not good_way and status != "stalled":
-            out.flags.append({"code": "moved-wrong-way", "text": "Since launch the metric has moved the wrong way, outside its normal noise."})
+        elif not level.within_noise and not good_way and status != "stalled":
+            out.flags.append({"code": "moved-wrong-way", "text": "Since launch the metric has moved the wrong way, outside its pre-launch range."})
 
     # Check 3: does the outcome move with the metric? (coupling.ts)
     coupling = None
@@ -324,7 +377,7 @@ def read_bet(bet: dict[str, Any], metrics: dict[str, Metric], as_of: dt.datetime
                 out.flags.append({"code": "outcome-thin", "text": f"Fewer than three readings of {clean(oname, 80)} since launch, so coupling is not judged yet."})
 
     # The caps: a landed call needs every check to pass.
-    blockers = {"source-stale", "source-jumpy", "within-noise", "no-baseline", "metric-up-outcome-down", "metric-up-outcome-flat"}
+    blockers = {"brief-after-launch", "source-stale", "source-jumpy", "within-noise", "no-baseline", "metric-up-outcome-down", "metric-up-outcome-flat"}
     held = [f for f in out.flags if f["code"] in blockers]
     if status == "landed" and held:
         status = "watch"
@@ -350,16 +403,18 @@ def read_bet(bet: dict[str, Any], metrics: dict[str, Metric], as_of: dt.datetime
     codes = {f["code"] for f in out.flags}
     if status == "landed":
         step = "Keep the metric on the scorecard, and decide whether to scale the bet."
+    elif "brief-after-launch" in codes:
+        step = "Treat this bar as a new brief: date it today and read against it from the next reading."
     elif codes & {"source-stale", "source-jumpy"}:
-        step = "Fix or verify the source, then read again."
+        step = "Fix or verify the source, then read again. If a jump is real, record who checked it in verified_jumps."
     elif "within-noise" in codes:
-        step = "Run an experiment (a holdout or an A/B test) before calling it."
+        step = f"Run an experiment before calling it: hold the bet back from a random group and compare {out.metric} between the two groups."
     elif "no-baseline" in codes:
         step = "Find pre-launch readings for a baseline, or run an experiment."
     elif codes & {"metric-up-outcome-down", "metric-up-outcome-flat"}:
         step = "Check whether the metric still tracks the outcome before crediting it."
     elif status == "stalled":
-        step = "Decide: change course, set a new bar and date, or stop the bet."
+        step = "Decide one of three: change course, write a new brief with a new bar and date, or stop the bet."
     else:
         step = f"Read again at the next reading, and by {brief.by} at the latest."
     if "green-over-red" in codes or "one-step-rosier" in codes:
@@ -412,9 +467,9 @@ def to_markdown(result: dict[str, Any]) -> str:
         lines.append(line + f" Source: {b['source']}.")
         if "move" in f:
             m = f["move"]
+            size = "outside it (the baseline was flat)" if m["flat_baseline"] else f"{abs(m['z']):g} times the pre-launch spread ({m['baseline_sd']:g})"
             lines.append(
-                f"- Since launch on {f['shipped']}: {m['from_shown']} to {m['to_shown']}, a move of {m['delta']:+g}, "
-                f"{abs(m['z']):g} times the pre-launch noise ({m['noise_sigma']:g})."
+                f"- Since launch on {f['shipped']}: pre-launch mean {m['baseline_shown']} over {m['baseline_n']} readings, then {m['to_shown']}, a move of {m['delta']:+g}, {size}."
             )
         if "outcome" in f:
             o = f["outcome"]
@@ -462,7 +517,9 @@ def _numbers_in(obj: Any) -> set[float]:
 def check_prose(result: dict[str, Any], prose: str) -> list[dict[str, str]]:
     """Every way the prose claims more than the read shows. Empty when it is safe to send."""
     findings: list[dict[str, str]] = []
-    allowed = _numbers_in(result) | {checks.NOISE_Z}
+    constants = {checks.NOISE_Z, checks.LEVEL_Z, float(checks.MIN_BASELINE)}
+    shared = _numbers_in(result["counts"]) | constants
+    everything = _numbers_in(result) | constants
     sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+|\n+", prose) if s.strip()]
     for s in sentences:
         quoted = s[:120]
@@ -470,13 +527,15 @@ def check_prose(result: dict[str, Any], prose: str) -> list[dict[str, str]]:
             findings.append({"rule": "causal-claim", "where": quoted, "fix": "Say the metric moved, not that the bet moved it. A metric moving is not proof."})
         if m := BANNED.search(s):
             findings.append({"rule": "banned-word", "where": quoted, "fix": f'Drop "{m.group(0)}".'})
+        named = [b for b in result["bets"] if b["name"].lower() in s.lower()]
+        # A sentence that names bets may use only those bets' figures; one that names none may use any.
+        allowed = shared.union(*(_numbers_in(b) for b in named)) if named else everything
         for tok in NUM.findall(ISO_DATE.sub(" ", s)):
             value = round(abs(float(tok.strip("+-$%").replace(",", ""))), 2)
             if value not in allowed:
-                findings.append({"rule": "figure-not-computed", "where": quoted, "fix": f"{tok} is not in the read. Use only figures the script computed."})
-        for b in result["bets"]:
-            if b["name"].lower() not in s.lower():
-                continue
+                where = f"in the figures for {', '.join(b['name'] for b in named)}" if named else "in the read"
+                findings.append({"rule": "figure-not-computed", "where": quoted, "fix": f"{tok} is not {where}. Use only figures the script computed."})
+        for b in named:
             said = {w.lower() for w in STATUS_WORD.findall(s)}
             actual = b["status"] or "not read"
             if said and actual not in said:
@@ -488,13 +547,36 @@ def check_prose(result: dict[str, Any], prose: str) -> list[dict[str, str]]:
     return findings
 
 
+def init(folder: Path) -> int:
+    """Set up an empty read: the two CSV headers, a briefs folder with the template, and the next commands."""
+    if folder.exists() and any(folder.iterdir()):
+        raise SystemExit(f"did_it_land: {folder} is not empty. Pick a new folder so nothing is overwritten.")
+    (folder / "briefs").mkdir(parents=True, exist_ok=True)
+    (folder / "metrics.csv").write_text(METRICS_CSV_HEADER, encoding="utf-8")
+    (folder / "bets.csv").write_text(BETS_CSV_HEADER, encoding="utf-8")
+    template = (ASSETS / "landing-brief-template.md").read_text(encoding="utf-8")
+    (folder / "briefs" / "example-brief.md").write_text(template, encoding="utf-8")
+    here = Path(__file__).resolve().parent
+    print(
+        f"did_it_land: set up {folder}.\n"
+        "  1. One row per metric reading in metrics.csv, with the source on every row.\n"
+        "  2. One row per shipped bet in bets.csv; brief is a path such as briefs/my-bet.md.\n"
+        "  3. One landing brief per bet in briefs/ (copy example-brief.md).\n"
+        f"  4. python3 {here / 'from_csv.py'} {folder / 'metrics.csv'} {folder / 'bets.csv'} --as-of YYYY-MM-DD -o {folder / 'bundle.json'}\n"
+        f"  5. python3 {here / 'did_it_land.py'} read {folder / 'bundle.json'}"
+    )
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="A post-launch read: landed, watch or stalled for each shipped bet with a landing brief.")
-    ap.add_argument("command", choices=["read", "check"])
-    ap.add_argument("bundle", help="the bundle JSON: as_of, metrics and bets")
+    ap.add_argument("command", choices=["init", "read", "check"])
+    ap.add_argument("bundle", help="init: a new folder to set up; read and check: the bundle JSON")
     ap.add_argument("prose", nargs="?", help="check: a Markdown file of prose written about the read")
     ap.add_argument("--json", action="store_true", help="read: print JSON instead of Markdown")
     args = ap.parse_args()
+    if args.command == "init":
+        return init(Path(args.bundle))
     try:
         result = read(Path(args.bundle))
     except BundleError as e:

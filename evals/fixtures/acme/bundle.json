@@ -372,6 +372,7 @@
       "name": "Quote drafting assistant",
       "shipped": "2026-09-07",
       "brief": "briefs/quote-drafting.md",
+      "brief_written": "2026-08-03",
       "presented_status": "green",
       "outcome": {
         "metric": "Quote win rate",
@@ -383,6 +384,7 @@
       "name": "Invoice chasing",
       "shipped": "2026-10-05",
       "brief": "briefs/invoice-chasing.md",
+      "brief_written": "2026-08-31",
       "presented_status": "amber"
     },
     {
@@ -390,6 +392,7 @@
       "name": "Mobile job scheduler",
       "shipped": "2026-08-03",
       "brief": "briefs/job-scheduler.md",
+      "brief_written": "2026-06-29",
       "presented_status": "green"
     },
     {
@@ -397,6 +400,7 @@
       "name": "Payment links",
       "shipped": "2026-10-19",
       "brief": "briefs/payment-links.md",
+      "brief_written": "2026-09-14",
       "presented_status": "green"
     },
     {
@@ -404,6 +408,7 @@
       "name": "Automatic reminders",
       "shipped": "2026-09-21",
       "brief": "briefs/automatic-reminders.md",
+      "brief_written": "2026-08-17",
       "presented_status": "green",
       "outcome": {
         "metric": "Invoices paid within 14 days",
@@ -415,6 +420,7 @@
       "name": "SMS reminders",
       "shipped": "2026-09-28",
       "brief": "briefs/sms-reminders.md",
+      "brief_written": "2026-08-24",
       "presented_status": "green"
     },
     {
@@ -422,6 +428,7 @@
       "name": "Invoice auto-match",
       "shipped": "2026-10-05",
       "brief": "briefs/auto-match.md",
+      "brief_written": "2026-08-31",
       "presented_status": "amber"
     },
     {
