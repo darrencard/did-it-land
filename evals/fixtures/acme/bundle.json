@@ -1,0 +1,435 @@
+{
+  "company": "Acme",
+  "illustrative": true,
+  "as_of": "2026-11-26T09:00:00Z",
+  "metrics": {
+    "Quote draft acceptance rate": {
+      "source": "Illustrative product analytics export, quote_drafts_weekly.csv",
+      "last_synced": "2026-11-26T05:00:00Z",
+      "readings": [
+        {
+          "date": "2026-07-27",
+          "value": 22
+        },
+        {
+          "date": "2026-08-03",
+          "value": 23
+        },
+        {
+          "date": "2026-08-10",
+          "value": 21
+        },
+        {
+          "date": "2026-08-17",
+          "value": 22
+        },
+        {
+          "date": "2026-08-24",
+          "value": 23
+        },
+        {
+          "date": "2026-08-31",
+          "value": 22
+        },
+        {
+          "date": "2026-09-14",
+          "value": 27
+        },
+        {
+          "date": "2026-09-28",
+          "value": 31
+        },
+        {
+          "date": "2026-10-12",
+          "value": 35
+        },
+        {
+          "date": "2026-10-26",
+          "value": 38
+        },
+        {
+          "date": "2026-11-09",
+          "value": 41
+        },
+        {
+          "date": "2026-11-23",
+          "value": 43
+        }
+      ]
+    },
+    "Quote win rate": {
+      "source": "Illustrative CRM export, quotes_won_weekly.csv",
+      "last_synced": "2026-11-26T05:00:00Z",
+      "readings": [
+        {
+          "date": "2026-08-31",
+          "value": 31
+        },
+        {
+          "date": "2026-09-14",
+          "value": 32
+        },
+        {
+          "date": "2026-09-28",
+          "value": 33
+        },
+        {
+          "date": "2026-10-12",
+          "value": 33
+        },
+        {
+          "date": "2026-10-26",
+          "value": 34
+        },
+        {
+          "date": "2026-11-09",
+          "value": 35
+        },
+        {
+          "date": "2026-11-23",
+          "value": 36
+        }
+      ]
+    },
+    "Days sales outstanding": {
+      "source": "Illustrative finance export, dso_weekly.csv",
+      "last_synced": "2026-11-26T05:00:00Z",
+      "readings": [
+        {
+          "date": "2026-08-31",
+          "value": 41
+        },
+        {
+          "date": "2026-09-07",
+          "value": 40
+        },
+        {
+          "date": "2026-09-14",
+          "value": 41
+        },
+        {
+          "date": "2026-09-21",
+          "value": 40
+        },
+        {
+          "date": "2026-09-28",
+          "value": 41
+        },
+        {
+          "date": "2026-10-12",
+          "value": 39
+        },
+        {
+          "date": "2026-10-26",
+          "value": 37
+        },
+        {
+          "date": "2026-11-09",
+          "value": 36
+        },
+        {
+          "date": "2026-11-23",
+          "value": 35
+        }
+      ]
+    },
+    "Weekly active schedulers": {
+      "source": "Illustrative product analytics export, scheduler_wau.csv",
+      "last_synced": "2026-11-26T05:00:00Z",
+      "readings": [
+        {
+          "date": "2026-07-06",
+          "value": 2050
+        },
+        {
+          "date": "2026-07-13",
+          "value": 2080
+        },
+        {
+          "date": "2026-07-20",
+          "value": 2040
+        },
+        {
+          "date": "2026-07-27",
+          "value": 2070
+        },
+        {
+          "date": "2026-08-17",
+          "value": 2100
+        },
+        {
+          "date": "2026-09-14",
+          "value": 2120
+        },
+        {
+          "date": "2026-10-12",
+          "value": 2090
+        },
+        {
+          "date": "2026-10-26",
+          "value": 2110
+        },
+        {
+          "date": "2026-11-23",
+          "value": 2100
+        }
+      ]
+    },
+    "Payment link conversion": {
+      "source": "Illustrative billing export, payment_links_weekly.csv",
+      "last_synced": "2026-11-26T05:00:00Z",
+      "readings": [
+        {
+          "date": "2026-09-07",
+          "value": 16.0
+        },
+        {
+          "date": "2026-09-14",
+          "value": 17.5
+        },
+        {
+          "date": "2026-09-21",
+          "value": 16.2
+        },
+        {
+          "date": "2026-09-28",
+          "value": 17.8
+        },
+        {
+          "date": "2026-10-05",
+          "value": 16.4
+        },
+        {
+          "date": "2026-10-12",
+          "value": 17.6
+        },
+        {
+          "date": "2026-10-26",
+          "value": 17.0
+        },
+        {
+          "date": "2026-11-09",
+          "value": 17.4
+        },
+        {
+          "date": "2026-11-23",
+          "value": 18.1
+        }
+      ]
+    },
+    "Reminders sent per week": {
+      "source": "Illustrative messaging log export, reminders_weekly.csv",
+      "last_synced": "2026-11-26T05:00:00Z",
+      "readings": [
+        {
+          "date": "2026-08-24",
+          "value": 8100
+        },
+        {
+          "date": "2026-08-31",
+          "value": 7900
+        },
+        {
+          "date": "2026-09-07",
+          "value": 8050
+        },
+        {
+          "date": "2026-09-14",
+          "value": 7950
+        },
+        {
+          "date": "2026-10-05",
+          "value": 14000
+        },
+        {
+          "date": "2026-10-19",
+          "value": 18500
+        },
+        {
+          "date": "2026-11-02",
+          "value": 21000
+        },
+        {
+          "date": "2026-11-16",
+          "value": 23500
+        },
+        {
+          "date": "2026-11-23",
+          "value": 24000
+        }
+      ]
+    },
+    "Invoices paid within 14 days": {
+      "source": "Illustrative finance export, paid_14d_weekly.csv",
+      "last_synced": "2026-11-26T05:00:00Z",
+      "readings": [
+        {
+          "date": "2026-09-14",
+          "value": 62
+        },
+        {
+          "date": "2026-10-05",
+          "value": 61
+        },
+        {
+          "date": "2026-10-19",
+          "value": 61
+        },
+        {
+          "date": "2026-11-02",
+          "value": 60
+        },
+        {
+          "date": "2026-11-16",
+          "value": 59
+        },
+        {
+          "date": "2026-11-23",
+          "value": 58
+        }
+      ]
+    },
+    "Reminder open rate": {
+      "source": "Illustrative messaging log export, reminder_opens_weekly.csv",
+      "last_synced": "2026-11-14T08:00:00Z",
+      "readings": [
+        {
+          "date": "2026-08-31",
+          "value": 41
+        },
+        {
+          "date": "2026-09-07",
+          "value": 42
+        },
+        {
+          "date": "2026-09-14",
+          "value": 40
+        },
+        {
+          "date": "2026-09-21",
+          "value": 41
+        },
+        {
+          "date": "2026-10-05",
+          "value": 48
+        },
+        {
+          "date": "2026-10-19",
+          "value": 53
+        },
+        {
+          "date": "2026-11-02",
+          "value": 57
+        },
+        {
+          "date": "2026-11-09",
+          "value": 58
+        }
+      ]
+    },
+    "Invoice auto-match rate": {
+      "source": "Illustrative reconciliation export, auto_match_weekly.csv",
+      "last_synced": "2026-11-26T05:00:00Z",
+      "readings": [
+        {
+          "date": "2026-09-07",
+          "value": 61
+        },
+        {
+          "date": "2026-09-14",
+          "value": 62
+        },
+        {
+          "date": "2026-09-21",
+          "value": 61
+        },
+        {
+          "date": "2026-09-28",
+          "value": 62
+        },
+        {
+          "date": "2026-10-12",
+          "value": 63
+        },
+        {
+          "date": "2026-10-26",
+          "value": 64
+        },
+        {
+          "date": "2026-11-09",
+          "value": 65
+        },
+        {
+          "date": "2026-11-23",
+          "value": 95
+        }
+      ]
+    }
+  },
+  "bets": [
+    {
+      "id": "B1",
+      "name": "Quote drafting assistant",
+      "shipped": "2026-09-07",
+      "brief": "briefs/quote-drafting.md",
+      "presented_status": "green",
+      "outcome": {
+        "metric": "Quote win rate",
+        "better": "higher"
+      }
+    },
+    {
+      "id": "B2",
+      "name": "Invoice chasing",
+      "shipped": "2026-10-05",
+      "brief": "briefs/invoice-chasing.md",
+      "presented_status": "amber"
+    },
+    {
+      "id": "B3",
+      "name": "Mobile job scheduler",
+      "shipped": "2026-08-03",
+      "brief": "briefs/job-scheduler.md",
+      "presented_status": "green"
+    },
+    {
+      "id": "B4",
+      "name": "Payment links",
+      "shipped": "2026-10-19",
+      "brief": "briefs/payment-links.md",
+      "presented_status": "green"
+    },
+    {
+      "id": "B5",
+      "name": "Automatic reminders",
+      "shipped": "2026-09-21",
+      "brief": "briefs/automatic-reminders.md",
+      "presented_status": "green",
+      "outcome": {
+        "metric": "Invoices paid within 14 days",
+        "better": "higher"
+      }
+    },
+    {
+      "id": "B6",
+      "name": "SMS reminders",
+      "shipped": "2026-09-28",
+      "brief": "briefs/sms-reminders.md",
+      "presented_status": "green"
+    },
+    {
+      "id": "B7",
+      "name": "Invoice auto-match",
+      "shipped": "2026-10-05",
+      "brief": "briefs/auto-match.md",
+      "presented_status": "amber"
+    },
+    {
+      "id": "B8",
+      "name": "Customer portal redesign",
+      "shipped": "2026-10-12",
+      "brief": null,
+      "presented_status": "green"
+    }
+  ]
+}

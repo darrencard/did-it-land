@@ -1,0 +1,85 @@
+{
+  "company": "Acme",
+  "illustrative": true,
+  "as_of": "2026-11-26T09:00:00Z",
+  "metrics": {
+    "Quote draft acceptance rate": {
+      "source": "Illustrative product analytics export, quote_drafts_weekly.csv",
+      "last_synced": "2026-11-26T05:00:00Z",
+      "stale_after_hours": 48,
+      "readings": [
+        {
+          "date": "2026-08-17",
+          "value": 22
+        },
+        {
+          "date": "2026-08-24",
+          "value": 23
+        },
+        {
+          "date": "2026-08-31",
+          "value": 22
+        },
+        {
+          "date": "2026-09-14",
+          "value": 27
+        },
+        {
+          "date": "2026-09-28",
+          "value": 31
+        },
+        {
+          "date": "2026-10-12",
+          "value": 35
+        },
+        {
+          "date": "2026-10-26",
+          "value": 38
+        },
+        {
+          "date": "2026-11-09",
+          "value": 41
+        }
+      ]
+    },
+    "Quote win rate": {
+      "source": "Illustrative CRM export, quotes_won_weekly.csv",
+      "last_synced": "2026-11-26T05:00:00Z",
+      "readings": [
+        {
+          "date": "2026-08-31",
+          "value": 31
+        },
+        {
+          "date": "2026-09-14",
+          "value": 32
+        },
+        {
+          "date": "2026-09-28",
+          "value": 33
+        },
+        {
+          "date": "2026-10-26",
+          "value": 34
+        },
+        {
+          "date": "2026-11-09",
+          "value": 35
+        }
+      ]
+    }
+  },
+  "bets": [
+    {
+      "id": "B1",
+      "name": "Quote drafting assistant",
+      "shipped": "2026-09-07",
+      "brief": "landing-brief-template.md",
+      "presented_status": "green",
+      "outcome": {
+        "metric": "Quote win rate",
+        "better": "higher"
+      }
+    }
+  ]
+}
