@@ -59,6 +59,16 @@ python3.12 skills/did-it-land/scripts/did_it_land.py read evals/fixtures/acme/bu
 
 Your own data: `did_it_land.py init my-read` sets up two CSVs (one row per metric reading, one row per bet) and a briefs folder, and prints the next two commands. Samples are in `evals/fixtures/acme-csv/`.
 
+## Sample
+
+[examples/acme/did-it-land.html](examples/acme/did-it-land.html) reads Acme's seven bets from the canonical Landing Loop briefs, with `quote-drafting` followed end to end, and [examples/acme/landing/quote-drafting.json](examples/acme/landing/quote-drafting.json) holds the `landed` key it writes. Regenerate both from the repository root (Python 3.11 or later):
+
+```bash
+python3 skills/did-it-land/scripts/did_it_land.py read examples/acme/bundle.json --loop examples/acme --bet quote-drafting --html examples/acme/did-it-land.html
+```
+
+A test checks the command reproduces the committed page byte for byte.
+
 ## Go deeper
 
 - [SKILL.md](skills/did-it-land/SKILL.md): the bundle format, the status rule, every check and its limits.

@@ -221,7 +221,7 @@ def unit_of(brief: landing_brief.Brief) -> str:
 def read_bet(bet: dict[str, Any], metrics: dict[str, Metric], as_of: dt.datetime, base_dir: Path, loop_dir: Path | None = None) -> BetRead:
     """One bet's read. Every figure it prints comes from the bundle; the status word comes from the rule above."""
     out = BetRead(id=clean(bet.get("id", ""), 40), name=clean(bet["name"], 120), status=None, reason="")
-    out.slug = loop.slug(str(bet["name"]))
+    out.slug = loop.slug(str(bet.get("slug") or bet["name"]))
     if not bet.get("brief"):
         out.not_read = "No landing brief, so there is no bar or date to read it against. Write one before the next read."
         return out
@@ -527,9 +527,12 @@ def landed_key(b: dict[str, Any], as_of: str) -> dict[str, Any]:
     }
 
 
-def write_loop(result: dict[str, Any], loop_dir: Path) -> list[Path]:
-    """Write the `landed` key for every bet that was read. A bet not read gets no record: there is no status to write."""
-    return [loop.write(loop_dir, b["slug"], Path(b["brief_path"]), landed_key(b, result["as_of"])) for b in result["bets"] if b["status"]]
+def write_loop(result: dict[str, Any], loop_dir: Path, only: str | None = None) -> list[Path]:
+    """Write the `landed` key for every bet that was read, or only the one named. A bet not read gets no record."""
+    picked = [b for b in result["bets"] if b["status"] and (only is None or b["slug"] == only)]
+    if only is not None and not picked:
+        raise BundleError(f"no bet read has the slug {only!r}. Slugs: {', '.join(b['slug'] for b in result['bets'] if b['status'])}.")
+    return [loop.write(loop_dir, b["slug"], Path(b["brief_path"]), landed_key(b, result["as_of"])) for b in picked]
 
 
 def to_markdown(result: dict[str, Any]) -> str:
@@ -673,6 +676,8 @@ def main() -> int:
     ap.add_argument("prose", nargs="?", help="check: a Markdown file of prose written about the read")
     ap.add_argument("--json", action="store_true", help="read: print JSON instead of Markdown")
     ap.add_argument("--loop", help="read: the working folder holding landing/<bet>.json; reads each record, writes only its landed key")
+    ap.add_argument("--bet", help="read: with --loop, write only this bet's record (its slug)")
+    ap.add_argument("--html", help="read: write the HTML page to this path")
     ap.add_argument("--out", help="read: a folder to write read.md, read.html and read.json into")
     args = ap.parse_args()
     if args.command == "init":
@@ -683,8 +688,17 @@ def main() -> int:
         raise SystemExit(f"did_it_land: {e}") from None
     if args.command == "read":
         if args.loop:
-            for p in write_loop(result, Path(args.loop)):
+            try:
+                written = write_loop(result, Path(args.loop), args.bet)
+            except BundleError as e:
+                raise SystemExit(f"did_it_land: {e}") from None
+            for p in written:
                 print(f"did_it_land: wrote the landed key in {p}", file=sys.stderr)
+        if args.html:
+            import render_html  # noqa: PLC0415  (only needed for HTML)
+
+            Path(args.html).write_text(render_html.page(result), encoding="utf-8")
+            print(f"did_it_land: wrote {args.html}", file=sys.stderr)
         if args.out:
             import render_html  # noqa: PLC0415  (only needed for --out)
 

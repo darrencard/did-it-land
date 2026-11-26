@@ -180,10 +180,11 @@ class Html(unittest.TestCase):
 
     def test_every_status_word_prints(self):
         for b in self.result["bets"]:
-            self.assertIn(f'<span class="st {b["status"] or "none"}">{b["status"] or "not read"}</span>', self.page)
+            word = b["status"] or "not read"
+            self.assertIn(f">{word}</span>", self.page)
 
     def test_illustrative_and_not_proof(self):
-        self.assertIn("Illustrative: sample data", self.page)
+        self.assertIn('<span class="ill">Illustrative</span>', self.page)
         self.assertIn("is not proof", self.page)
 
     def test_source_text_is_escaped(self):
@@ -195,6 +196,48 @@ class Html(unittest.TestCase):
 
     def test_no_em_dashes(self):
         self.assertNotIn(chr(0x2014), self.page)
+
+
+class Sample(unittest.TestCase):
+    ROOT = SKILL.parent.parent
+    EX = ROOT / "examples" / "acme"
+
+    def command(self):
+        readme = (self.ROOT / "README.md").read_text(encoding="utf-8")
+        section = readme.split("## Sample", 1)[1].split("```bash", 1)[1].split("```", 1)[0].strip()
+        self.assertEqual(len(section.splitlines()), 1, "the sample command must be one line")
+        return section.split()
+
+    def test_the_readme_command_reproduces_the_sample_byte_for_byte(self):
+        cmd = self.command()
+        self.assertEqual(cmd[0], "python3")
+        with tempfile.TemporaryDirectory() as d:
+            work = Path(d) / "repo"
+            shutil.copytree(self.ROOT / "skills", work / "skills")
+            shutil.copytree(self.EX, work / "examples" / "acme")
+            committed_record = (self.EX / "landing" / "quote-drafting.json").read_bytes()
+            shutil.rmtree(work / "examples" / "acme" / "landing")
+            (work / "examples" / "acme" / "did-it-land.html").unlink()
+            subprocess.run([sys.executable, *cmd[1:]], cwd=work, check=True, capture_output=True)
+            self.assertEqual((work / "examples/acme/did-it-land.html").read_bytes(), (self.EX / "did-it-land.html").read_bytes())
+            self.assertEqual((work / "examples/acme/landing/quote-drafting.json").read_bytes(), committed_record)
+
+    def test_sample_reads_seven_bets_with_all_three_words(self):
+        result = did_it_land.read(self.EX / "bundle.json")
+        self.assertEqual(len(result["bets"]), 7)
+        self.assertIn("quote-drafting", [b["slug"] for b in result["bets"]])
+        self.assertEqual({b["status"] for b in result["bets"]}, {"landed", "watch", "stalled"})
+
+    def test_briefs_are_the_canonical_ones(self):
+        canon = json.loads((self.EX / "bundle.json").read_text(encoding="utf-8"))
+        for b in canon["bets"]:
+            self.assertEqual(Path(b["brief"]).stem, b["slug"])
+
+    def test_record_holds_only_the_landed_key(self):
+        record = json.loads((self.EX / "landing" / "quote-drafting.json").read_text(encoding="utf-8"))
+        self.assertEqual(set(record), {"schema", "bet", "brief", "landed"})
+        self.assertEqual(record["brief"]["path"], "briefs/quote-drafting.md")
+        self.assertEqual(record["landed"]["status"], "landed")
 
 
 if __name__ == "__main__":

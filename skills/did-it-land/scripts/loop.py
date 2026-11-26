@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any
@@ -108,7 +109,9 @@ def write(folder: Path, bet_slug: str, brief_path: Path, landed: dict[str, Any])
     p = path_for(folder, bet_slug)
     record = load(folder, bet_slug)
     if record is None:
-        record = {"schema": SCHEMA, "bet": bet_slug, "brief": {"path": str(brief_path), "sha256": sha256(brief_path)}}
+        # The brief's path relative to the working folder, so the record reads the same on any machine.
+        rel = Path(os.path.relpath(brief_path.resolve(), folder.resolve())).as_posix()
+        record = {"schema": SCHEMA, "bet": bet_slug, "brief": {"path": rel, "sha256": sha256(brief_path)}}
     record[KEY] = landed
     p.parent.mkdir(parents=True, exist_ok=True)
     tmp = p.with_suffix(".json.tmp")
