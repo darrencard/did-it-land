@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0, 2026-11-26
 
 - Sample: `examples/acme/did-it-land.html` reads the seven canonical Acme briefs, and `examples/acme/landing/quote-drafting.json` holds the `landed` key. A test regenerates both from the README command byte for byte.
 - The page now uses the Leader Report template's own stylesheet (scorecard rows, bullet range line, status marks), so it is the same brand family as the deck.
