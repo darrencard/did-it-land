@@ -16,12 +16,12 @@
 
 ## Quote drafting: landed
 
-- **landed**. Past the bar of 40% by 2026-11-15. Cost: over budget, cited from cost-budget-check 0.3.1.
+- **landed**. Past the bar of 40% by 2026-11-15. Cost: over budget, cited from cost-budget-check 0.3.2.
 - Quote draft acceptance rate is 43% on 2026-11-23, against a bar of 40% (higher is better) by 2026-11-15. At the date it read 41% (2026-11-09). Source: Illustrative product analytics export, quote_drafts_weekly.csv.
 - Since launch on 2026-09-07: pre-launch mean 21.67% over 6 readings, then 41%, a move of +19.33, 5.05 times the pre-launch spread (3.83).
 - Outcome, Quote win rate: 31 to 36 over the same window (7 readings). Source: Illustrative CRM export, quotes_won_weekly.csv.
-- Cost check, cited from the loop record: over budget (cost-budget-check 0.3.1, 2026-11-01 to 2026-11-14): cost per task $0.0338 against $0.027, 25% over; tokens per task 10,300 against 9,000, 14% over; price per token $0.00000328 against $0.000003, 9% over.
-- Flag, over-cost-budget: Cost is over budget, cited from cost-budget-check 0.3.1. It does not change the status.
+- Cost check, cited from the loop record: over budget (cost-budget-check 0.3.2, 2026-11-01 to 2026-11-14): cost per task $0.0338 against $0.027, 25% over; tokens per task 10,300 against 9,000, 14% over; price per token $0.00000328 against $0.000003, 9% over.
+- Flag, over-cost-budget: Cost is over budget, cited from cost-budget-check 0.3.2. It does not change the status.
 - Next step: Keep the metric on the scorecard, and decide whether to scale the bet, given cost is over budget. Decides: Head of Product, Quoting squad. Due: 2026-12-10.
 
 ## Invoice chasing: watch

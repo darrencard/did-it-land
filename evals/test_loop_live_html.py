@@ -339,9 +339,10 @@ class Sample(unittest.TestCase):
         self.assertEqual(landed["cost_check"]["budget_status"], "over budget")
         self.assertIn("given cost is over budget", landed["next_step"])
         md = (self.EX / "did-it-land.md").read_text(encoding="utf-8")
-        self.assertIn("- **landed**. Past the bar of 40% by 2026-11-15. Cost: over budget, cited from cost-budget-check 0.3.1.", md)
+        cited = record["cost"]["tool"]  # the version comes from the upstream record, not this test
+        self.assertIn(f"- **landed**. Past the bar of 40% by 2026-11-15. Cost: over budget, cited from {cited}.", md)
         self.assertIn("cost per task $0.0338 against $0.027, 25% over", md)
-        self.assertIn('<span class="chip" title="cited from cost-budget-check 0.3.1">cost over budget</span>', (self.EX / "did-it-land.html").read_text(encoding="utf-8"))
+        self.assertIn(f'<span class="chip" title="cited from {cited}">cost over budget</span>', (self.EX / "did-it-land.html").read_text(encoding="utf-8"))
 
     def test_next_steps_are_due_on_or_after_the_read(self):
         result = did_it_land.read(self.EX / "bundle.json", self.EX)
