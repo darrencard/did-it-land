@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.6, 2026-11-27
+
+- Status cells never wrap to three lines: a watch row held past its target says why on its figure line (`16.9% → 18.1% · TARGET 18% · PAST TARGET, INSIDE NORMAL UPS AND DOWNS`), and the status cell keeps only the status word and the cost word. Test.
+- The six other projects fold as hairline rows: name, status word (and cost word) and a caret, under one "The other projects" label. No "PROJECT 0X" label and no large heading per project; opening a row shows the same detail as the open project. The page reads in 420 words unfolded. Tests: one heading, one row per other project, under 1,000 words unfolded.
+- 12px floor: `floor_fonts` raises every size under 12px to 12px, and the page's own labels (What to do next, Decides, Due, the figure labels, owners and due dates) are 12px; no 11.5px text remains. The vendored files are unchanged. Test: no font size under 12px in the page CSS.
+- Dates never break: every ISO date in the page's text sits in a `white-space:nowrap` span (attributes, code and the title keep theirs). Test.
+- README opens with the vocabulary bridge, "A bet is a project you expect to move a number; its bar is the target its landing brief sets."; SKILL.md says "Use the user's word, project or bet; the record key stays `bet`."
+
 ## 0.3.5, 2026-11-27
 
 - Text runs the full column: the heading, the lede, the next step, section text, notes and captions are as wide as the scorecard frame. The page's own CSS lifts every cap on text (the template's `.lede` 62ch, and this page's heading 22ch, figures 760px and checks 80ch; the readings table keeps its width) and sets `text-wrap: balance` on the heading and `pretty` on paragraphs; the vendored template is unchanged. Test: the page CSS sets no max-width on h1, .lede or p, and the override comes after the template's cap.

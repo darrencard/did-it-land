@@ -65,7 +65,7 @@ class Versions(unittest.TestCase):
         plugin = json.loads((ROOT / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))["version"]
         project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
         skill = re.search(r'version: "([^"]+)"', (SCRIPTS.parent / "SKILL.md").read_text(encoding="utf-8")).group(1)
-        self.assertEqual({plugin, project, skill}, {"0.3.5"})
+        self.assertEqual({plugin, project, skill}, {"0.3.6"})
 
 
 class BriefSchema(unittest.TestCase):

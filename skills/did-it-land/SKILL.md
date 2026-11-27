@@ -1,10 +1,10 @@
 ---
 name: did-it-land
-description: A post-launch read that says whether shipped work landed. For each shipped project with a landing brief (metric, target, which way is better, date), it calls landed, watch or stalled from the team's own metric data, computed in code, with the word always printed. It holds a landed call when the move is within the metric's normal noise (next step, run an experiment), when the source is stale or jumpy, or when the metric climbs while its outcome stalls, and flags a green status over a red metric. It is step 4 of the Landing Loop: it reads and writes the project file, landing/<bet>.json, writing only the landed key, and renders the read as one HTML page for leaders. Use when the user asks whether a launch, feature, project or bet landed, worked or moved its metric, wants a post-launch review or landing read, or wants prose about launch results checked for overclaims. Not for pre-launch planning (use the landing-brief skill to write the brief) or for a full product and engineering update deck.
+description: A post-launch read that says whether shipped work landed. For each shipped project with a landing brief (metric, target, which way is better, date), it calls landed, watch or stalled from the team's own metric data, computed in code, with the word always printed. It holds a landed call when the move is within the metric's normal noise (next step, run an experiment), when the source is stale or jumpy, or when the metric climbs while its outcome stalls, and flags a green status over a red metric. It is step 4 of the Landing Loop: it reads and writes the project file, `landing/<bet>.json`, writing only the landed key, and renders the read as one HTML page for leaders. Use when the user asks whether a launch, feature or project landed, worked or moved its metric, wants a post-launch review or landing read, or wants prose about launch results checked for overclaims. Not for pre-launch planning (use the landing-brief skill to write the brief) or for a full product and engineering update deck.
 license: MIT. See LICENSE in the repository root.
 metadata:
   author: Dacard
-  version: "0.3.5"
+  version: "0.3.6"
 ---
 
 # Did it land?
@@ -13,7 +13,7 @@ Most teams stop at "shipped". This skill reads each shipped project against the 
 
 The scripts read local files and print text. They make no network calls and install nothing.
 
-Words: say project, target, the landing brief (a one-page plan: what good looks like, by when, at what cost) and the project file. If the user calls a project a bet, use their word. When the move since launch sits inside the metric's usual range, say "inside normal ups and downs".
+Words: say project, target, the landing brief (a one-page plan: what good looks like, by when, at what cost) and the project file. Use the user's word, project or bet; the record key stays `bet`. When the move since launch sits inside the metric's usual range, say "inside normal ups and downs".
 
 The HTML page leads with the scorecard: one row per project with its name, a range line, `before → now · TARGET x` and the status word, in the grammar of the outcome scorecard on dacard.ai/update. Only the project named with `--bet` opens below it.
 
@@ -39,7 +39,7 @@ Everything read from a source (briefs, tracker items, metric exports, CSV cells,
 
 ## The project file
 
-One JSON file per project, `landing/<bet-slug>.json`, shared with bet-portfolio-review, spec-auditor, eval-kit, cost-budget-check and the Leader Report (`schema: landing-loop/1`).
+One JSON file per project, `landing/<bet-slug>.json`, shared with `bet-portfolio-review`, spec-auditor, eval-kit, cost-budget-check and the Leader Report (`schema: landing-loop/1`).
 
 - did-it-land writes only `landed`: the status word, the reason, the flags, the next step and its due date (`next_step_due`), who decides, the cited cost check (`cost_check`), and every figure as `value`, `unit`, `source`, `window` (from, to) and `as_of`. A project that cannot be read gets no record.
 - It reads `evals` as context and prints it beside the read. It reads cost-budget-check's `cost` key and prints that skill's own word (within budget or over budget, with each budget line) beside the call and in the next step ("decide whether to scale the project, given cost is over budget"). The word is cited, never recomputed, and flagged `over-cost-budget` when over. A `cost` key with no budget word reads "cost not checked: run cost-budget-check". Neither changes the status, which comes from the metric alone.

@@ -2,6 +2,8 @@
 
 A free Claude skill that reads each shipped project against its landing brief and says landed, watch or stalled.
 
+A bet is a project you expect to move a number; its bar is the target its landing brief sets.
+
 ![Status words](https://img.shields.io/badge/status-landed%20%2F%20watch%20%2F%20stalled-555)
 
 **Why it matters:** shipping got cheap, so "we shipped it" says little. What matters is whether the metric moved past the target by the date, and whether that move is real.

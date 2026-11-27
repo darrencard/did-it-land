@@ -11,10 +11,10 @@ The scorecard: one row per project, its average before launch, the latest readin
 | Quote drafting | 22% → **43%** · TARGET 40% | **landed**, cost over budget |
 | Invoice chasing | 41 → **35** · TARGET 30 · LOWER IS BETTER | **watch** |
 | Job scheduler | 2,060 → **2,100** · TARGET 3,000 | **stalled** |
-| Payment links | 16.9% → **18.1%** · TARGET 18% | **watch**, past target · inside normal ups and downs |
-| Automatic reminders | 8,000 → **24,000** · TARGET 20,000 | **watch**, past target · outcome fell |
-| SMS reminders | 41% → **58%** · TARGET 55% | **watch**, past target · data out of date |
-| Auto match | 62% → **95%** · TARGET 80% | **watch**, past target · data jumped |
+| Payment links | 16.9% → **18.1%** · TARGET 18% | **watch**, past target, inside normal ups and downs |
+| Automatic reminders | 8,000 → **24,000** · TARGET 20,000 | **watch**, past target, outcome fell |
+| SMS reminders | 41% → **58%** · TARGET 55% | **watch**, past target, data out of date |
+| Auto match | 62% → **95%** · TARGET 80% | **watch**, past target, data jumped |
 
 ## Quote drafting: landed
 
@@ -97,4 +97,4 @@ A number moving is not proof that the project moved it. This read says whether t
 
 Quote drafting: the cost word is cited from `cost-budget-check 0.3.4`; the read never recomputes it.
 
-With --loop and --bet, the read adds its page to the project file: the `landed` key of `landing/<slug>.json`, and no other key. Built by did-it-land 0.3.5.
+With --loop and --bet, the read adds its page to the project file: the `landed` key of `landing/<slug>.json`, and no other key. Built by did-it-land 0.3.6.

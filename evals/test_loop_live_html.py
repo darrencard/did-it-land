@@ -271,14 +271,14 @@ class Html(unittest.TestCase):
             for word in (r"\brecords?\b", r"\bbets?\b", r"\bbar\b", r"\bprds?\b", r"\barr\b", r"\btokens?\b", r"within-noise", r"verified_jumps", r"\.json"):
                 self.assertIsNone(re.search(word, text), f"{name}: {word}")
 
-    def test_no_text_is_smaller_than_11px(self):
+    def test_no_text_is_smaller_than_12px(self):
         css = " ".join(re.findall(r"<style>(.*?)</style>", self.page, re.DOTALL)) + " " + " ".join(re.findall(r'style="([^"]*)"', self.page))
         sizes = re.findall(r"font-size\s*:\s*([\d.]+)px", css) + re.findall(r"font\s*:[^;{}]*?(?<![\w.-])([\d.]+)px", css)
         sizes += re.findall(r'font-size="([\d.]+)"', self.page)
         self.assertTrue(sizes)
-        self.assertEqual([s for s in sizes if float(s) < 11], [])
+        self.assertEqual([s for s in sizes if float(s) < 12], [])
         self.assertNotRegex(css, r"font-size\s*:\s*[\d.]+r?em")
-        before, after = ".a{font:400 10px/16px var(--mono)}.b{font-size:10.5px}.c{font-size:13px}", ".a{font:400 11px/16px var(--mono)}.b{font-size:11px}.c{font-size:13px}"
+        before, after = ".a{font:400 10px/16px var(--mono)}.b{font-size:10.5px}.c{font-size:13px}", ".a{font:400 12px/16px var(--mono)}.b{font-size:12px}.c{font-size:13px}"
         self.assertEqual(render_html.floor_fonts(before), after)
 
     def test_the_scorecard_is_rows_with_no_text_inside_a_picture(self):
@@ -289,7 +289,7 @@ class Html(unittest.TestCase):
         self.assertEqual(svgkit.scaled_svgs_in(self.page), [], "a picture with a viewBox would scale")
         for b in [b for b in self.result["bets"] if b["status"] and "move" in b["figures"]]:
             f = b["figures"]
-            tail = " · LOWER IS BETTER" if f["bar"]["better"] == "lower" else ""
+            tail = "".join(f" · {t}" for t in (render_html.figure_tail(f), render_html.past_target(b).upper()) if t)
             line = f'<span class="sc-l">{render_html.prior_shown(f)} <i>→</i> <b>{f["current"]["shown"]}</b> · TARGET {f["bar"]["shown"]}{tail}</span>'
             self.assertIn(line, frames[0], b["name"])
 
@@ -306,16 +306,20 @@ class Html(unittest.TestCase):
         for prior, now in re.findall(r'<span class="sc-l">([^ <]+) <i>→</i> <b>([^<]+)</b>', frame):
             self.assertEqual(render_html.decimals(prior), render_html.decimals(now), (prior, now))
 
-    def test_a_watch_row_past_its_target_says_why_under_the_word(self):
-        words = {}
+    def test_a_watch_row_past_its_target_says_why_on_its_figure_line(self):
+        lines, words = {}, {}
         for row in re.findall(r'<div class="sc-r">(.*?)</div>', svgkit.frames_in(self.page)[0]):
             name = re.search(r'<span class="sc-n">([^<]+)</span>', row).group(1)
+            lines[name] = re.sub(r"<[^>]+>", "", re.search(r'<span class="sc-l">(.*?)</span>', row).group(1))
             words[name] = re.findall(r'<span class="sc-w">([^<]+)</span>', row)
-        self.assertEqual(words["Payment links"], ["past target · inside normal ups and downs"])
-        self.assertEqual(words["Automatic reminders"], ["past target · outcome fell"])
-        self.assertEqual(words["SMS reminders"], ["past target · data out of date"])
-        self.assertEqual(words["Invoice auto-match"], ["past target · data jumped"])
-        self.assertEqual(words["Invoice chasing"], [], "a watch row short of its target needs no reason")
+        self.assertEqual(lines["Payment links"], "16.9% → 18.1% · TARGET 18% · PAST TARGET, INSIDE NORMAL UPS AND DOWNS")
+        self.assertTrue(lines["Automatic reminders"].endswith(" · PAST TARGET, OUTCOME FELL"))
+        self.assertTrue(lines["SMS reminders"].endswith(" · PAST TARGET, DATA OUT OF DATE"))
+        self.assertTrue(lines["Invoice auto-match"].endswith(" · PAST TARGET, DATA JUMPED"))
+        self.assertNotIn("PAST TARGET", lines["Invoice chasing"], "a watch row short of its target needs no reason")
+        # The status cell keeps only the status word and the cost word: no reason under it.
+        for name, ws in words.items():
+            self.assertTrue(all(w.startswith("cost ") or w == "not read" for w in ws), (name, ws))
         for b in self.result["bets"]:
             held = b["status"] == "watch" and "the call is held" in b["reason"]
             self.assertEqual(bool(render_html.past_target(b)), held, b["name"])
@@ -360,9 +364,57 @@ class Html(unittest.TestCase):
         self.assertEqual(len(ticks), 1, ticks)
 
     def test_only_the_focus_project_is_open(self):
-        opened = re.findall(r'<details class="proj"( open)?><summary><h2 id="([^"]+)"', self.page)
-        self.assertEqual([slug for o, slug in opened if o], [self.result["bets"][0]["slug"]])
-        self.assertEqual(len(opened), len(self.result["bets"]))
+        opened = re.findall(r'<details class="proj" open><summary><h2 id="([^"]+)"', self.page)
+        self.assertEqual(opened, [self.result["bets"][0]["slug"]])
+        rows = re.findall(r'<details class="proj row" id="([^"]+)"><summary><span class="pn">', self.page)
+        self.assertEqual(rows, [b["slug"] for b in self.result["bets"][1:]], "every other project folds as one hairline row")
+        self.assertEqual(self.page.count("<h2"), 1, "no large heading per folded project")
+        self.assertNotRegex(self.page, r"Project \d\d", "no PROJECT 0X chip")
+
+    def test_the_page_reads_in_under_1000_words_unfolded(self):
+        from html.parser import HTMLParser
+
+        class Visible(HTMLParser):
+            """Text a reader sees as the page opens: a closed fold shows only its summary line."""
+
+            def __init__(self) -> None:
+                super().__init__()
+                self.stack: list[list[bool]] = []  # per open <details>: [is open, inside its summary]
+                self.skip = 0
+                self.words = 0
+
+            def handle_starttag(self, tag, attrs):
+                if tag == "details":
+                    self.stack.append(["open" in dict(attrs), False])
+                elif tag == "summary" and self.stack:
+                    self.stack[-1][1] = True
+                elif tag in ("style", "title"):
+                    self.skip += 1
+
+            def handle_endtag(self, tag):
+                if tag == "details" and self.stack:
+                    self.stack.pop()
+                elif tag == "summary" and self.stack:
+                    self.stack[-1][1] = False
+                elif tag in ("style", "title"):
+                    self.skip -= 1
+
+            def handle_data(self, data):
+                if not self.skip and all(is_open or in_summary for is_open, in_summary in self.stack):
+                    self.words += len(data.split())
+
+        v = Visible()
+        v.feed(self.page)
+        self.assertLess(v.words, 1000, v.words)
+
+    def test_dates_never_break(self):
+        self.assertIn(".nd{white-space:nowrap}", self.page)
+        body = re.sub(r'<span class="nd">\d{4}-\d{2}-\d{2}</span>', "", self.page.split("<body>", 1)[1])
+        self.assertEqual(re.findall(r"\d{4}-\d{2}-\d{2}", re.sub(r"<[^>]*>", " ", body)), [])
+        self.assertEqual(
+            render_html.nowrap_dates('<p title="2026-01-02">by 2026-01-02</p><code>2026-01-02</code>'),
+            '<p title="2026-01-02">by <span class="nd">2026-01-02</span></p><code>2026-01-02</code>',
+        )
 
     def test_the_header_prints_the_plain_name_and_the_code_name_is_for_engineers(self):
         self.assertEqual(re.search(r'<span class="sk-meta"><span>(.*?)</span>', self.page).group(1), "Did it land?")
@@ -474,7 +526,7 @@ class Sample(unittest.TestCase):
         self.assertEqual(at, sorted(at))
         self.assertIn("<h1>Quote drafting landed. Job scheduler stalled. Five more are on watch.</h1>", body)
         self.assertEqual(body.count('<div class="next">'), 1, "one next step leads the page")
-        self.assertIn('<span class="o">Head of Product, Field squad</span><span class="d">2026-12-10</span>', body)
+        self.assertIn('<span class="o">Head of Product, Field squad</span><span class="d"><span class="nd">2026-12-10</span></span>', body)
         self.assertIn("<details><summary>For your engineers</summary>", body)
 
 

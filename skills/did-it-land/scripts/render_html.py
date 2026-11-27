@@ -48,10 +48,10 @@ main.solo{margin-left:0}
 .solo .lede{margin-bottom:28px}
 .solo .lede b{color:var(--t1);font-weight:500}
 .next{margin-top:28px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:8px 32px;align-items:baseline;border:1px solid var(--brass);border-radius:12px;padding:20px 24px;background:var(--brass-bg)}
-.next>b{font:400 11px/22px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--brass)}
+.next>b{font:400 12px/22px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--brass)}
 .next p{margin:0;font-size:16px;line-height:1.5;color:var(--t1)}
-.next .who{display:flex;flex-wrap:wrap;gap:4px 24px;margin-top:10px;font:400 11.5px/16px var(--mono);color:var(--brass)}
-.next .who span::before{font-size:11px;letter-spacing:.1em;color:var(--t3);margin-right:8px}
+.next .who{display:flex;flex-wrap:wrap;gap:4px 24px;margin-top:10px;font:400 12px/16px var(--mono);color:var(--brass)}
+.next .who span::before{font-size:12px;letter-spacing:.1em;color:var(--t3);margin-right:8px}
 .next .who .o::before{content:"DECIDES"}.next .who .d::before{content:"DUE"}
 .head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:10px 24px}
 .head h2{margin-bottom:12px}
@@ -60,11 +60,11 @@ main.solo{margin-left:0}
 .solo .scg{margin-top:8px}
 .figs{margin:0;display:grid}
 .figs>div{display:grid;grid-template-columns:112px minmax(0,1fr);gap:4px 16px;border-top:1px solid var(--line);padding:11px 0}
-.figs dt{font:400 11px/22px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
+.figs dt{font:400 12px/22px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
 .figs dd{margin:0;font-size:13.5px;line-height:1.55;color:var(--t2)}
 .figs dd b{color:var(--t1);font-weight:500}
 .figs .own dt,.figs .own .o{color:var(--brass)}
-.figs .own .o,.figs .own .d{display:block;font:400 11.5px/18px var(--mono);margin-top:4px}
+.figs .own .o,.figs .own .d{display:block;font:400 12px/18px var(--mono);margin-top:4px}
 .figs .own .d{color:var(--t2)}
 .solo details{margin-top:24px}
 .checks{margin:12px 0 0;padding:0;list-style:none}
@@ -78,6 +78,15 @@ main.solo{margin-left:0}
 .proj>summary h2{margin:0}
 .proj[open]>summary{margin-bottom:16px}
 .solo details.proj{margin-top:0;border-top:0;padding:0}
+.rows .proj.row{margin:0;padding:12px 0;border-top:1px solid var(--line)}
+.rows .proj.row:last-child{border-bottom:1px solid var(--line)}
+.proj.row>summary{display:grid;grid-template-columns:minmax(0,1fr) auto 12px;gap:8px 32px;align-items:baseline;margin:0}
+.proj.row>summary::before{content:none}
+.proj.row>summary::after{content:"\\25B8";font:400 12px/16px var(--mono);color:var(--t3);text-align:right}
+.proj.row[open]>summary::after{content:"\\25BE"}
+.proj.row[open]>summary{margin-bottom:16px}
+.proj.row .pn{font:400 14px/20px var(--sans);color:var(--t1)}
+.nd{white-space:nowrap}
 ::selection{background:var(--t1);color:var(--bg)}
 :focus-visible{outline-color:var(--t1)}
 .foot{max-width:1120px;margin:0 auto;padding:28px 40px 64px;color:var(--t3);font-size:12px}
@@ -160,19 +169,41 @@ def plain(text: str) -> str:
     return text
 
 
-FONT_FLOOR = 11  # px: no text on the page renders smaller, at any width
+FONT_FLOOR = 12  # px: no text on the page renders smaller, at any width
 FONT_SIZE = re.compile(r"(font-size\s*:\s*)(\d+(?:\.\d+)?)px")
 FONT_SHORTHAND = re.compile(r"(font\s*:[^;{}]*?)(?<![\w.-])(\d+(?:\.\d+)?)px")
 
 
 def floor_fonts(css: str) -> str:
-    """Raise every font size under 11px to 11px. The vendored template and svgkit stay byte-identical on disk;
+    """Raise every font size under 12px to 12px. The vendored template and svgkit stay byte-identical on disk;
     the floor applies to their text as the page is built, so this page's CSS has no smaller size anywhere."""
 
     def up(m: re.Match[str]) -> str:
         return f"{m.group(1)}{FONT_FLOOR if float(m.group(2)) < FONT_FLOOR else m.group(2)}px"
 
     return FONT_SHORTHAND.sub(up, FONT_SIZE.sub(up, css))
+
+
+ISO_DATE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
+TAG = re.compile(r"(<[^>]*>)")
+RAW = re.compile(r"<(style|title|code|script)\b", re.I)
+
+
+def nowrap_dates(body: str) -> str:
+    """Wrap every ISO date in the page's text in white-space:nowrap, so "2026-09-07" never breaks at a hyphen.
+    Only text between tags changes: attributes (aria-label, title) and style, title, code and script keep theirs."""
+    parts = TAG.split(body)
+    skip = None
+    for i, part in enumerate(parts):
+        if i % 2:  # a tag
+            m = RAW.match(part)
+            if m:
+                skip = m.group(1).lower()
+            elif skip and part.lower().startswith(f"</{skip}"):
+                skip = None
+        elif not skip:
+            parts[i] = ISO_DATE.sub(r'<span class="nd">\g<0></span>', part)
+    return "".join(parts)
 
 
 def stylesheet() -> str:
@@ -244,7 +275,7 @@ def prior_shown(f: dict[str, Any]) -> str | None:
     return NUMBER.sub(lambda _: value, m["baseline_shown"], count=1)
 
 
-# Why a watch row past its target is held, in the flag's own plain words, as the second line under the status word.
+# Why a watch row past its target is held, in the flag's own plain words, on the row's figure line.
 PAST = {
     "within-noise": "inside normal ups and downs",
     "source-stale": "data out of date",
@@ -258,11 +289,12 @@ PAST = {
 
 
 def past_target(b: dict[str, Any]) -> str:
-    """ "past target · outcome fell" for a watch row whose call is held past its target; else ""."""
+    """ "past target, outcome fell" for a watch row whose call is held past its target; else "". The figure line
+    prints it in capitals after the target, so the status cell keeps only the status word (and the cost word)."""
     if b["status"] != "watch" or "the call is held" not in b["reason"]:
         return ""
     why = [PAST[fl["code"]] for fl in b["flags"] if fl["code"] in PAST]
-    return " · ".join(["past target", *dict.fromkeys(why)])
+    return ", ".join(["past target", *dict.fromkeys(why)])
 
 
 def figure_tail(f: dict[str, Any]) -> str:
@@ -271,16 +303,17 @@ def figure_tail(f: dict[str, Any]) -> str:
 
 
 def scorecard_row(b: dict[str, Any], domain: tuple[float, float]) -> str:
-    """One project: name | range line | before launch → now · TARGET x | status word, and the cost word when set.
+    """One project: name | range line | before launch → now · TARGET x · WHY, when a held call is past its target |
+    status word, and the cost word when set.
     Every row shares the frame's one scale, each value read as a share of its own target, so the ticks line up."""
     if b["status"] is None:
         return sk.sc_row(b["name"], figure=sk.figure_line("NO READING"), word=sk.check_word("not read"))
     f = b["figures"]
     m = f.get("move")
     picture = sk.range_line(prior=m["baseline_mean"] if m else None, actual=f["current"]["value"], target=f["bar"]["value"], status=b["status"], domain=domain, relative=True)
-    figure = sk.figure_line(f["current"]["shown"], prior=prior_shown(f), target=f["bar"]["shown"], tail=figure_tail(f))
-    why = past_target(b)
-    word = sk.status_mark(b["status"]) + (sk.check_word(why) if why else "") + cost_word(b)
+    tail = " · ".join(t for t in (figure_tail(f), past_target(b).upper()) if t)
+    figure = sk.figure_line(f["current"]["shown"], prior=prior_shown(f), target=f["bar"]["shown"], tail=tail)
+    word = sk.status_mark(b["status"]) + cost_word(b)
     return sk.sc_row(b["name"], picture=picture, figure=figure, word=word)
 
 
@@ -349,20 +382,34 @@ def readings(b: dict[str, Any]) -> str:
     return f'<div class="tablewrap readings"><table><tr><th>Date</th><th class="num">Reading</th><th>When</th></tr>{rows}</table></div>'
 
 
-def bet_section(b: dict[str, Any], n: int, open_: bool) -> str:
-    """One project's detail. Only the project this read is about opens; the others fold, and their rows stay on the scorecard."""
-    meta = f'<div class="meta"><span>Project {n:02d}</span></div>'
-    summary = f'<summary><h2 id="{e(b["slug"])}">{e(b["name"])}</h2><span class="marks">{status_mark(b["status"])}{cost_word(b)}</span></summary>'
+def bet_body(b: dict[str, Any]) -> str:
     if b["status"] is None:
-        body = f'<p class="lede">{e(plain(b["not_read"]))}</p>'
-    else:
-        checks = "".join(f"<li>{e(CHECKS.get(fl['code'], plain(fl['text'])))}</li>" for fl in b["flags"]) or "<li>Every check passed.</li>"
-        fold = (
-            f"<details><summary>Checks and readings ({plural(len(b['flags']), 'check')}, {plural(len(b['figures']['series']), 'reading')})</summary>"
-            f'<ul class="checks">{checks}</ul>{readings(b)}<p class="src">Source: {e(b["source"])}</p></details>'
-        )
-        body = f'<p class="lede">{e(b["metric"])}. {e(plain(b["reason"]))}</p>{facts(b)}{fold}'
-    return f'<section class="slide">{meta}<details class="proj"{" open" if open_ else ""}>{summary}{body}</details></section>'
+        return f'<p class="lede">{e(plain(b["not_read"]))}</p>'
+    checks = "".join(f"<li>{e(CHECKS.get(fl['code'], plain(fl['text'])))}</li>" for fl in b["flags"]) or "<li>Every check passed.</li>"
+    fold = (
+        f"<details><summary>Checks and readings ({plural(len(b['flags']), 'check')}, {plural(len(b['figures']['series']), 'reading')})</summary>"
+        f'<ul class="checks">{checks}</ul>{readings(b)}<p class="src">Source: {e(b["source"])}</p></details>'
+    )
+    return f'<p class="lede">{e(b["metric"])}. {e(plain(b["reason"]))}</p>{facts(b)}{fold}'
+
+
+def bet_section(b: dict[str, Any]) -> str:
+    """The detail of the project this read is about, open under its own heading."""
+    summary = f'<summary><h2 id="{e(b["slug"])}">{e(b["name"])}</h2><span class="marks">{status_mark(b["status"])}{cost_word(b)}</span></summary>'
+    return f'<section class="slide"><div class="meta"><span>This project</span></div><details class="proj" open>{summary}{bet_body(b)}</details></section>'
+
+
+def other_rows(bets: list[dict[str, Any]]) -> str:
+    """Every other project folds as one hairline row: its name, its status word (and cost word) and a caret. Their
+    scorecard rows stay open above; opening a row shows the same detail as the open project."""
+    if not bets:
+        return ""
+    rows = "".join(
+        f'<details class="proj row" id="{e(b["slug"])}"><summary><span class="pn">{e(b["name"])}</span>'
+        f'<span class="marks">{status_mark(b["status"])}{cost_word(b)}</span></summary>{bet_body(b)}</details>'
+        for b in bets
+    )
+    return f'<section class="slide"><div class="meta"><span>The other projects</span></div><div class="rows">{rows}</div></section>'
 
 
 def engineers(result: dict[str, Any]) -> str:
@@ -399,12 +446,14 @@ def page(result: dict[str, Any], focus: str | None = None) -> str:
     version = "v" + result.get("computed_by", "did-it-land ?").rsplit(" ", 1)[-1]
     header = sk.page_header("Did it land?", date=f"Read {result['as_of'][:10]}", version=version, illustrative=result["illustrative"])
     focus = focus or (result["bets"][0]["slug"] if result["bets"] else None)
-    sections = "".join(bet_section(b, i, b["slug"] == focus) for i, b in enumerate(result["bets"], start=1))
+    lead_bet = [b for b in result["bets"] if b["slug"] == focus]
+    sections = "".join(bet_section(b) for b in lead_bet) + other_rows([b for b in result["bets"] if b["slug"] != focus])
     return (
         '<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         f'<title>{e(title)}</title><style>{floor_fonts(stylesheet() + sk.CSS + sk.SCORECARD_CSS + PAGE_CSS)}</style></head><body><main class="solo">'
-        f'<section class="slide cover">{header}<h1>{e(verdict(result))}</h1><p class="lede">{lede}</p>{scorecard(result)}{lead}</section>'
-        f"{sections}{engineers(result)}"
-        '<p class="foot">A number moving is not proof that the project moved it. This read says whether the number reached the target, not why. '
+        + nowrap_dates(
+            f'<section class="slide cover">{header}<h1>{e(verdict(result))}</h1><p class="lede">{lede}</p>{scorecard(result)}{lead}</section>{sections}{engineers(result)}'
+        )
+        + '<p class="foot">A number moving is not proof that the project moved it. This read says whether the number reached the target, not why. '
         "Every figure is computed in code from the sources named.</p></main></body></html>\n"
     )
