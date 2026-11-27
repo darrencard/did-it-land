@@ -59,7 +59,7 @@ main.solo{margin-left:0}
 .proj .marks .sc-w{font:400 12px/16px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--t2)}
 .solo .scg{margin-top:8px}
 .figs{margin:0;display:grid}
-.figs>div{display:grid;grid-template-columns:112px minmax(0,1fr);gap:4px 16px;border-top:1px solid var(--line);padding:11px 0}
+.figs>div{display:grid;grid-template-columns:144px minmax(0,1fr);gap:4px 16px;border-top:1px solid var(--line);padding:11px 0}
 .figs dt{font:400 12px/22px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
 .figs dd{margin:0;font-size:13.5px;line-height:1.55;color:var(--t2)}
 .figs dd b{color:var(--t1);font-weight:500}
@@ -87,6 +87,7 @@ main.solo{margin-left:0}
 .proj.row[open]>summary{margin-bottom:16px}
 .proj.row .pn{font:400 14px/20px var(--sans);color:var(--t1)}
 .nd{white-space:nowrap}
+.sc-why{display:block}
 ::selection{background:var(--t1);color:var(--bg)}
 :focus-visible{outline-color:var(--t1)}
 .foot{max-width:1120px;margin:0 auto;padding:28px 40px 64px;color:var(--t3);font-size:12px}
@@ -275,7 +276,7 @@ def prior_shown(f: dict[str, Any]) -> str | None:
     return NUMBER.sub(lambda _: value, m["baseline_shown"], count=1)
 
 
-# Why a watch row past its target is held, in the flag's own plain words, on the row's figure line.
+# Why a watch row past its target is held, in the flag's own plain words, on a second line under the row's figure.
 PAST = {
     "within-noise": "inside normal ups and downs",
     "source-stale": "data out of date",
@@ -289,12 +290,13 @@ PAST = {
 
 
 def past_target(b: dict[str, Any]) -> str:
-    """ "past target, outcome fell" for a watch row whose call is held past its target; else "". The figure line
-    prints it in capitals after the target, so the status cell keeps only the status word (and the cost word)."""
+    """ "past target · outcome fell" for a watch row whose call is held past its target; else "". The figure cell
+    prints it in capitals on a second line under the figure, so the status cell keeps only the status word (and the
+    cost word) and the name column keeps its width."""
     if b["status"] != "watch" or "the call is held" not in b["reason"]:
         return ""
     why = [PAST[fl["code"]] for fl in b["flags"] if fl["code"] in PAST]
-    return ", ".join(["past target", *dict.fromkeys(why)])
+    return " · ".join(["past target", *dict.fromkeys(why)])
 
 
 def figure_tail(f: dict[str, Any]) -> str:
@@ -303,7 +305,7 @@ def figure_tail(f: dict[str, Any]) -> str:
 
 
 def scorecard_row(b: dict[str, Any], domain: tuple[float, float]) -> str:
-    """One project: name | range line | before launch → now · TARGET x · WHY, when a held call is past its target |
+    """One project: name | range line | before launch → now · TARGET x, and under it WHY when a held call is past its target |
     status word, and the cost word when set.
     Every row shares the frame's one scale, each value read as a share of its own target, so the ticks line up."""
     if b["status"] is None:
@@ -311,8 +313,10 @@ def scorecard_row(b: dict[str, Any], domain: tuple[float, float]) -> str:
     f = b["figures"]
     m = f.get("move")
     picture = sk.range_line(prior=m["baseline_mean"] if m else None, actual=f["current"]["value"], target=f["bar"]["value"], status=b["status"], domain=domain, relative=True)
-    tail = " · ".join(t for t in (figure_tail(f), past_target(b).upper()) if t)
-    figure = sk.figure_line(f["current"]["shown"], prior=prior_shown(f), target=f["bar"]["shown"], tail=tail)
+    figure = sk.figure_line(f["current"]["shown"], prior=prior_shown(f), target=f["bar"]["shown"], tail=figure_tail(f))
+    why = past_target(b).upper()
+    if why:  # a second mono line under the figure, as the site's hero scorecard does, so the name column keeps its width
+        figure = figure[: -len("</span>")] + f'<span class="sc-why">{e(why)}</span></span>'
     word = sk.status_mark(b["status"]) + cost_word(b)
     return sk.sc_row(b["name"], picture=picture, figure=figure, word=word)
 

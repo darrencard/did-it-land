@@ -2,7 +2,7 @@
 
 ## 0.3.6, 2026-11-27
 
-- Status cells never wrap to three lines: a watch row held past its target says why on its figure line (`16.9% → 18.1% · TARGET 18% · PAST TARGET, INSIDE NORMAL UPS AND DOWNS`), and the status cell keeps only the status word and the cost word. Test.
+- Status cells never wrap to three lines: a watch row held past its target says why on a second mono line under its figure (`16.9% → 18.1% · TARGET 18%`, then `PAST TARGET · INSIDE NORMAL UPS AND DOWNS`), as the site's hero scorecard does, so no project name wraps at 1280 or 1100, and the status cell keeps only the status word and the cost word. The project detail's label column is 144px, so "ON THE DUE DATE" fits on one line. Tests.
 - The six other projects fold as hairline rows: name, status word (and cost word) and a caret, under one "The other projects" label. No "PROJECT 0X" label and no large heading per project; opening a row shows the same detail as the open project. The page reads in 420 words unfolded. Tests: one heading, one row per other project, under 1,000 words unfolded.
 - 12px floor: `floor_fonts` raises every size under 12px to 12px, and the page's own labels (What to do next, Decides, Due, the figure labels, owners and due dates) are 12px; no 11.5px text remains. The vendored files are unchanged. Test: no font size under 12px in the page CSS.
 - Dates never break: every ISO date in the page's text sits in a `white-space:nowrap` span (attributes, code and the title keep theirs). Test.

@@ -289,8 +289,10 @@ class Html(unittest.TestCase):
         self.assertEqual(svgkit.scaled_svgs_in(self.page), [], "a picture with a viewBox would scale")
         for b in [b for b in self.result["bets"] if b["status"] and "move" in b["figures"]]:
             f = b["figures"]
-            tail = "".join(f" · {t}" for t in (render_html.figure_tail(f), render_html.past_target(b).upper()) if t)
-            line = f'<span class="sc-l">{render_html.prior_shown(f)} <i>→</i> <b>{f["current"]["shown"]}</b> · TARGET {f["bar"]["shown"]}{tail}</span>'
+            tail = " · LOWER IS BETTER" if f["bar"]["better"] == "lower" else ""
+            why = render_html.past_target(b).upper()
+            why = f'<span class="sc-why">{why}</span>' if why else ""
+            line = f'<span class="sc-l">{render_html.prior_shown(f)} <i>→</i> <b>{f["current"]["shown"]}</b> · TARGET {f["bar"]["shown"]}{tail}{why}</span>'
             self.assertIn(line, frames[0], b["name"])
 
     def test_the_prior_prints_to_the_actuals_decimals(self):
@@ -306,17 +308,22 @@ class Html(unittest.TestCase):
         for prior, now in re.findall(r'<span class="sc-l">([^ <]+) <i>→</i> <b>([^<]+)</b>', frame):
             self.assertEqual(render_html.decimals(prior), render_html.decimals(now), (prior, now))
 
-    def test_a_watch_row_past_its_target_says_why_on_its_figure_line(self):
-        lines, words = {}, {}
+    def test_a_watch_row_past_its_target_says_why_under_its_figure(self):
+        lines, whys, words = {}, {}, {}
         for row in re.findall(r'<div class="sc-r">(.*?)</div>', svgkit.frames_in(self.page)[0]):
             name = re.search(r'<span class="sc-n">([^<]+)</span>', row).group(1)
-            lines[name] = re.sub(r"<[^>]+>", "", re.search(r'<span class="sc-l">(.*?)</span>', row).group(1))
+            fig = re.search(r'<span class="sc-l">(.*?)</span>(?=<span class="sc-s">)', row).group(1)
+            why = re.search(r'<span class="sc-why">([^<]+)</span>', fig)
+            whys[name] = why.group(1) if why else ""
+            lines[name] = re.sub(r"<[^>]+>", "", re.sub(r'<span class="sc-why">[^<]*</span>', "", fig))
             words[name] = re.findall(r'<span class="sc-w">([^<]+)</span>', row)
-        self.assertEqual(lines["Payment links"], "16.9% → 18.1% · TARGET 18% · PAST TARGET, INSIDE NORMAL UPS AND DOWNS")
-        self.assertTrue(lines["Automatic reminders"].endswith(" · PAST TARGET, OUTCOME FELL"))
-        self.assertTrue(lines["SMS reminders"].endswith(" · PAST TARGET, DATA OUT OF DATE"))
-        self.assertTrue(lines["Invoice auto-match"].endswith(" · PAST TARGET, DATA JUMPED"))
-        self.assertNotIn("PAST TARGET", lines["Invoice chasing"], "a watch row short of its target needs no reason")
+        self.assertEqual(lines["Payment links"], "16.9% → 18.1% · TARGET 18%")
+        self.assertEqual(whys["Payment links"], "PAST TARGET · INSIDE NORMAL UPS AND DOWNS")
+        self.assertEqual(whys["Automatic reminders"], "PAST TARGET · OUTCOME FELL")
+        self.assertEqual(whys["SMS reminders"], "PAST TARGET · DATA OUT OF DATE")
+        self.assertEqual(whys["Invoice auto-match"], "PAST TARGET · DATA JUMPED")
+        self.assertEqual(whys["Invoice chasing"], "", "a watch row short of its target needs no reason")
+        self.assertIn(".sc-why{display:block}", self.page, "the reason is its own line under the figure")
         # The status cell keeps only the status word and the cost word: no reason under it.
         for name, ws in words.items():
             self.assertTrue(all(w.startswith("cost ") or w == "not read" for w in ws), (name, ws))
