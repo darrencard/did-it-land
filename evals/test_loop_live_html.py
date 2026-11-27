@@ -120,9 +120,10 @@ class LoopRecord(unittest.TestCase):
         self.assertEqual(b["cost"]["budget_status"], "over budget")
         self.assertIn("given cost is over budget", b["next_step"])
         md = did_it_land.to_markdown(did_it_land.read(self.bundle, self.work))
-        self.assertIn("Context from the loop record, evals", md)
-        self.assertIn("Cost: over budget, cited from cost-budget-check 0.3.1.", md)
-        self.assertIn("tokens per task 12,000 against 9,000, 33% over", md)
+        self.assertIn("From the project file, evals", md)
+        self.assertIn("Cost: over budget, from the cost check.", md)
+        self.assertIn("the cost word is cited from `cost-budget-check 0.3.1`", md.split("## For your engineers", 1)[1])
+        self.assertIn("AI usage per task 12,000 against 9,000, 33% over", md)
 
     def test_the_cost_word_is_cited_never_recomputed(self):
         # The record says within budget although the actual is above the budget: the read prints the record's word.
@@ -270,6 +271,34 @@ class Html(unittest.TestCase):
         for word in (" bet ", " bets ", " bar ", "within-noise", "source-stale", "verified_jumps", ".json"):
             self.assertNotIn(word, public)
         self.assertIn("landing brief</b>, a one-page plan", self.page)
+        twin = did_it_land.to_markdown(self.result).split("## For your engineers", 1)[0].lower()
+        for name, text in {"page": public, "twin": twin}.items():
+            for word in (r"\brecords?\b", r"\bbets?\b", r"\bbar\b", r"\bprds?\b", r"\barr\b", r"\btokens?\b", r"within-noise", r"verified_jumps", r"\.json"):
+                self.assertIsNone(re.search(word, text), f"{name}: {word}")
+
+    def test_no_text_is_smaller_than_11px(self):
+        css = " ".join(re.findall(r"<style>(.*?)</style>", self.page, re.DOTALL)) + " " + " ".join(re.findall(r'style="([^"]*)"', self.page))
+        sizes = re.findall(r"font-size\s*:\s*([\d.]+)px", css) + re.findall(r"font\s*:[^;{}]*?(?<![\w.-])([\d.]+)px", css)
+        sizes += re.findall(r'font-size="([\d.]+)"', self.page)
+        self.assertTrue(sizes)
+        self.assertEqual([s for s in sizes if float(s) < 11], [])
+        self.assertNotRegex(css, r"font-size\s*:\s*[\d.]+r?em")
+        before, after = ".a{font:400 10px/16px var(--mono)}.b{font-size:10.5px}.c{font-size:13px}", ".a{font:400 11px/16px var(--mono)}.b{font-size:11px}.c{font-size:13px}"
+        self.assertEqual(render_html.floor_fonts(before), after)
+
+    def test_the_desktop_chart_is_640_wide_so_its_labels_stay_11px_in_the_left_column(self):
+        wide = re.findall(r'<svg class="sk-wide"[^>]*viewBox="0 0 (\d+) ', self.page)
+        self.assertTrue(wide)
+        self.assertEqual(set(wide), {"640"})
+        # The left column is 2.4fr of the 1040px content less a 40px gap, and at least 640 from 1100px up.
+        self.assertIn(".cols{display:grid;grid-template-columns:minmax(0,2.4fr) minmax(260px,1fr);gap:24px 40px", self.page)
+
+    def test_the_header_prints_the_plain_name_and_the_code_name_is_for_engineers(self):
+        self.assertEqual(re.search(r'<span class="sk-meta"><span>(.*?)</span>', self.page).group(1), "Did it land?")
+        public, fold = self.page.split("For your engineers", 1)
+        self.assertNotIn("did-it-land", svgkit.page_text(public).lower())
+        self.assertIn(f"Built by {self.result['computed_by']}.", fold)
+        self.assertIn(f"Built by {self.result['computed_by']}.", did_it_land.to_markdown(self.result).split("## For your engineers", 1)[1])
 
     def test_source_text_is_escaped(self):
         result = json.loads(json.dumps(self.result))
@@ -340,7 +369,8 @@ class Sample(unittest.TestCase):
         self.assertIn("given cost is over budget", landed["next_step"])
         md = (self.EX / "did-it-land.md").read_text(encoding="utf-8")
         cited = record["cost"]["tool"]  # the version comes from the upstream record, not this test
-        self.assertIn(f"- **landed**. Past the bar of 40% by 2026-11-15. Cost: over budget, cited from {cited}.", md)
+        self.assertIn("- **landed**. Past the target of 40% by 2026-11-15. Cost: over budget, from the cost check.", md)
+        self.assertIn(f"the cost word is cited from `{cited}`", md.split("## For your engineers", 1)[1])
         self.assertIn("cost per task $0.0338 against $0.027, 25% over", md)
         self.assertIn(f'<span class="chip" title="cited from {cited}">cost over budget</span>', (self.EX / "did-it-land.html").read_text(encoding="utf-8"))
 

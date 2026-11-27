@@ -546,52 +546,70 @@ def write_loop(result: dict[str, Any], loop_dir: Path, only: str | None = None) 
 
 
 def to_markdown(result: dict[str, Any]) -> str:
+    """The page's Markdown twin, in the page's plain words: project, target, the number. Flag codes, brief files
+    and slugs sit under "For your engineers" at the end."""
+    from render_html import CHECKS, better_words, plain  # noqa: PLC0415  (one set of public words for both outputs)
+
     title = f"Did it land? {result['company']}, read {result['as_of'][:10]}" if result["company"] else f"Did it land? Read {result['as_of'][:10]}"
     c = result["counts"]
     lines = [f"# {title}", ""]
     if result["illustrative"]:
         lines += ["*Illustrative: every figure here is sample data.*", ""]
     lines += [f"{c['landed']} landed, {c['watch']} watch, {c['stalled']} stalled, {c['not read']} not read.", ""]
-    lines += ["| Bet | Status | Metric | Now | Bar, by | Source |", "|---|---|---|---|---|---|"]
+    lines += ["| Project | Status | Number | Now | Target, by | Source |", "|---|---|---|---|---|---|"]
     for b in result["bets"]:
         if b["status"] is None:
             lines.append(f"| {b['name']} | not read | | | | |")
             continue
         f = b["figures"]
         lines.append(
-            f"| {b['name']} | **{b['status']}** | {b['metric']} | {f['current']['shown']} ({f['current']['date']}) | {f['bar']['shown']}, {f['bar']['by']} | {b['source']} |"
+            f"| {b['name']} | **{b['status']}** | {b['metric']} | {f['current']['shown']} ({f['current']['date']}) "
+            f"| {f['bar']['shown']} {better_words(f)}, {f['bar']['by']} | {b['source']} |"
         )
     for b in result["bets"]:
         lines += ["", f"## {b['name']}: {b['status'] or 'not read'}", ""]
         if b["status"] is None:
-            lines.append(b["not_read"])
+            lines.append(plain(b["not_read"]))
             continue
         f = b["figures"]
-        cost = f" Cost: {b['cost']['budget_status']}, cited from {b['cost']['cited_from']}." if b.get("cost") else ""
-        lines.append(f"- **{b['status']}**. {b['reason']}{cost}")
-        better = "higher" if f["bar"]["better"] == "higher" else "lower"
-        line = f"- {b['metric']} is {f['current']['shown']} on {f['current']['date']}, against a bar of {f['bar']['shown']} ({better} is better) by {f['bar']['by']}."
+        cost = f" Cost: {b['cost']['budget_status']}, from the cost check." if b.get("cost") else ""
+        lines.append(f"- **{b['status']}**. {plain(b['reason'])}{cost}")
+        line = f"- {b['metric']} is {f['current']['shown']} on {f['current']['date']}, against a target of {f['bar']['shown']} {better_words(f)} by {f['bar']['by']}."
         if "at_date" in f:
-            line += f" At the date it read {f['at_date']['shown']} ({f['at_date']['date']})."
+            line += f" On the due date it read {f['at_date']['shown']} ({f['at_date']['date']})."
         lines.append(line + f" Source: {b['source']}.")
         if "move" in f:
             m = f["move"]
-            size = "outside it (the baseline was flat)" if m["flat_baseline"] else f"{abs(m['z']):g} times the pre-launch spread ({m['baseline_sd']:g})"
+            size = "outside its range before launch, which did not vary" if m["flat_baseline"] else f"{abs(m['z']):g} times its usual ups and downs before launch"
             lines.append(
-                f"- Since launch on {f['shipped']}: pre-launch mean {m['baseline_shown']} over {m['baseline_n']} readings, then {m['to_shown']}, a move of {m['delta']:+g}, {size}."
+                f"- Since launch on {f['shipped']}: from an average of {m['baseline_shown']} over {m['baseline_n']} readings before launch "
+                f"to {m['to_shown']}, a move of {m['delta']:+g}, {size}."
             )
         if "outcome" in f:
             o = f["outcome"]
-            lines.append(f"- Outcome, {o['metric']}: {o['from']:g} to {o['to']:g} over the same window ({o['n']} readings). Source: {o['source']}.")
+            lines.append(f"- The result it should drive, {o['metric']}: {o['from']:g} to {o['to']:g} over the same weeks ({o['n']} readings). Source: {o['source']}.")
         for key, figs in b["context"].items():
             shown = "; ".join(f"{c['name']} {c['value']:,.10g}{' ' + c['unit'] if c['unit'] else ''} ({c['source']})" for c in figs)
-            lines.append(f"- Context from the loop record, {key}: {shown}.")
+            lines.append(f"- From the project file, {key}: {shown}.")
         if b.get("cost"):
-            lines.append(f"- Cost check, cited from the loop record: {b['cost']['text']}.")
+            lines.append(f"- The cost check, from the project file: {plain(b['cost']['text'])}.")
         for flag in b["flags"]:
-            lines.append(f"- Flag, {flag['code']}: {flag['text']}")
-        lines.append(f"- Next step: {b['next_step']} Decides: {b['decides']}. Due: {b['due']}.")
-    lines += ["", "A metric moving is not proof that the bet moved it. This read says whether the metric reached the bar, not why."]
+            lines.append(f"- Check: {CHECKS.get(flag['code'], plain(flag['text']))}")
+        lines.append(f"- Next step: {plain(b['next_step'])} Decides: {b['decides']}. Due: {b['due']}.")
+    lines += ["", "A number moving is not proof that the project moved it. This read says whether the number reached the target, not why."]
+    lines += ["", "## For your engineers", "", "| Project | Status | Flag codes | Landing brief | Slug |", "|---|---|---|---|---|"]
+    for b in result["bets"]:
+        codes = ", ".join(f"`{fl['code']}`" for fl in b["flags"]) or "none"
+        brief = Path(b["brief_path"]).name if b.get("brief_path") else "none"
+        lines.append(f"| {b['name']} | {b['status'] or 'not read'} | {codes} | {brief} | `{b['slug']}` |")
+    for b in result["bets"]:
+        if b.get("cost"):
+            lines.append(f"\n{b['name']}: the cost word is cited from `{b['cost']['cited_from']}`; the read never recomputes it.")
+    lines += [
+        "",
+        "With --loop and --bet, the read adds its page to the project file: the `landed` key of `landing/<slug>.json`, and no other key. "
+        f"Built by {result.get('computed_by', 'did-it-land')}.",
+    ]
     return "\n".join(lines) + "\n"
 
 

@@ -34,6 +34,7 @@ import svgkit as sk  # noqa: E402  (vendored, unchanged; see VENDORED.json)
 
 TEMPLATE = Path(__file__).resolve().parent.parent / "assets" / "vendor" / "template.html"
 STYLE = re.compile(r"<style>(.*?)</style>", re.S)
+CHART_WIDE = 640  # the desktop chart's viewBox width, for the two-column layout
 
 # Layout for this page only. Everything else comes from the template's stylesheet and svgkit.CSS.
 PAGE_CSS = """
@@ -53,19 +54,19 @@ main.solo{margin-left:0}
 .mini.key{justify-content:center;gap:12px;color:var(--t2)}
 .mini.key .mini-f{display:flex;align-items:center;gap:10px}
 .next{margin-top:28px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:8px 32px;align-items:baseline;border:1px solid var(--brass);border-radius:12px;padding:20px 24px;background:var(--brass-bg)}
-.next>b{font:400 10px/22px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--brass)}
+.next>b{font:400 11px/22px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--brass)}
 .next p{margin:0;font-size:16px;line-height:1.5;color:var(--t1)}
 .next .who{display:flex;flex-wrap:wrap;gap:4px 24px;margin-top:10px;font:400 11.5px/16px var(--mono);color:var(--brass)}
-.next .who span::before{font-size:10px;letter-spacing:.1em;color:var(--t3);margin-right:8px}
+.next .who span::before{font-size:11px;letter-spacing:.1em;color:var(--t3);margin-right:8px}
 .next .who .o::before{content:"DECIDES"}.next .who .d::before{content:"DUE"}
 .head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:10px 24px}
 .head h2{margin-bottom:12px}
 .head .marks{display:flex;align-items:baseline;gap:12px}
-.chip{font:400 10px/16px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t1);border:1px solid var(--line2);border-radius:3px;padding:1px 6px;white-space:nowrap}
+.chip{font:400 11px/16px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t1);border:1px solid var(--line2);border-radius:3px;padding:1px 6px;white-space:nowrap}
 .cols{display:grid;grid-template-columns:minmax(0,2.4fr) minmax(260px,1fr);gap:24px 40px;align-items:start;margin-top:4px}
 .figs{margin:0;display:grid}
 .figs>div{display:grid;grid-template-columns:112px minmax(0,1fr);gap:4px 16px;border-top:1px solid var(--line);padding:11px 0}
-.figs dt{font:400 10px/22px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
+.figs dt{font:400 11px/22px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
 .figs dd{margin:0;font-size:13.5px;line-height:1.55;color:var(--t2)}
 .figs dd b{color:var(--t1);font-weight:500}
 .figs .own dt,.figs .own .o{color:var(--brass)}
@@ -83,7 +84,7 @@ main.solo{margin-left:0}
 .foot{max-width:1120px;margin:0 auto;padding:28px 40px 64px;color:var(--t3);font-size:12px}
 @media (max-width:1100px){.cols{grid-template-columns:minmax(0,1fr)}.minis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:980px){.foot{padding:24px 16px 48px}.solo .slide.cover{padding-top:24px}.next{grid-template-columns:1fr}}
-@media (max-width:560px){.mini{padding:12px 12px 14px;gap:8px}.mini-h{flex-direction:column;gap:2px;font-size:13px}.mini-f{font-size:10.5px}.figs>div{grid-template-columns:1fr;gap:0}}
+@media (max-width:560px){.mini{padding:12px 12px 14px;gap:8px}.mini-h{flex-direction:column;gap:2px;font-size:13px}.mini-f{font-size:11px}.figs>div{grid-template-columns:1fr;gap:0}}
 """
 
 NUMBER_WORDS = ("No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve")
@@ -133,6 +134,11 @@ WORDS = (
     (r"\bthe bar\b", "the target"),
     (r"\bbar\b", "target"),
     (r" If a jump is real, record who checked it in verified_jumps\.", " If the jump is real, note who checked it."),
+    (r"\bthe loop record\b", "the project file"),
+    (r"\ba new record\b", "a new project file"),
+    (r"\bthe record\b", "the project file"),
+    (r"\btokens per task\b", "AI usage per task"),
+    (r"\bprice per token\b", "AI price per unit"),
     (r"\bthe source\b", "the data source"),
     (r"\bthe metric\b", "the number"),
 )
@@ -152,6 +158,21 @@ def plain(text: str) -> str:
     for pattern, to in WORDS:
         text = re.sub(pattern, to, text)
     return text
+
+
+FONT_FLOOR = 11  # px: no text on the page renders smaller, at any width
+FONT_SIZE = re.compile(r"(font-size\s*:\s*)(\d+(?:\.\d+)?)px")
+FONT_SHORTHAND = re.compile(r"(font\s*:[^;{}]*?)(?<![\w.-])(\d+(?:\.\d+)?)px")
+
+
+def floor_fonts(css: str) -> str:
+    """Raise every font size under 11px to 11px. The vendored template and svgkit stay byte-identical on disk;
+    the floor applies to their text as the page is built, so this page's CSS has no smaller size anywhere."""
+
+    def up(m: re.Match[str]) -> str:
+        return f"{m.group(1)}{FONT_FLOOR if float(m.group(2)) < FONT_FLOOR else m.group(2)}px"
+
+    return FONT_SHORTHAND.sub(up, FONT_SIZE.sub(up, css))
 
 
 def stylesheet() -> str:
@@ -229,8 +250,10 @@ def chart(b: dict[str, Any], variant: str) -> str:
     since. The target zone is neutral. The status word prints at the end of the line."""
     f = b["figures"]
     wide = variant == "wide"
-    width, height = (sk.WIDE, 250) if wide else (sk.TALL, 262)
-    left, right, top, bottom = 0.0, (596.0 if wide else 246.0), 30.0, (192.0 if wide else 186.0)
+    # 640 wide on desktop, not svgkit's 720: the chart sits in the left of two columns, and at 640 its 11px labels
+    # stay 11px or larger at every width the two columns show.
+    width, height = (CHART_WIDE, 250) if wide else (sk.TALL, 262)
+    left, right, top, bottom = 0.0, (CHART_WIDE - 124.0 if wide else 246.0), 30.0, (192.0 if wide else 186.0)
     x, y = _scales(f, (left + 6, right - 6), (bottom, top), 0.16)
     ty, xs, xb = y(f["bar"]["value"]), x(_day(f["shipped"])), x(_day(f["bar"]["by"]))
     # The target zone: the side of the target where it is met, shaded neutral.
@@ -396,7 +419,8 @@ def engineers(result: dict[str, Any]) -> str:
     note = (
         '<p class="mini-f">With --loop and --bet, the read adds its page to the project file: the <code>landed</code> key of '
         "<code>landing/&lt;slug&gt;.json</code>, and no other key. Cost is cited from the <code>cost</code> key that "
-        "cost-budget-check wrote; it is never recomputed.</p>"
+        "cost-budget-check wrote; it is never recomputed. "
+        f"Built by {e(result.get('computed_by', 'did-it-land'))}.</p>"
     )
     return (
         '<section class="slide"><div class="meta"><span>Detail</span></div>'
@@ -421,11 +445,11 @@ def page(result: dict[str, Any]) -> str:
     )
     lead = next_box(min(read, key=priority)) if read else ""
     version = "v" + result.get("computed_by", "did-it-land ?").rsplit(" ", 1)[-1]
-    header = sk.page_header("did-it-land", date=f"Read {result['as_of'][:10]}", version=version, illustrative=result["illustrative"])
+    header = sk.page_header("Did it land?", date=f"Read {result['as_of'][:10]}", version=version, illustrative=result["illustrative"])
     sections = "".join(bet_section(b, i, result["illustrative"]) for i, b in enumerate(result["bets"], start=1))
     return (
         '<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        f'<title>{e(title)}</title><style>{stylesheet()}{sk.CSS}{PAGE_CSS}</style></head><body><main class="solo">'
+        f'<title>{e(title)}</title><style>{floor_fonts(stylesheet() + sk.CSS + PAGE_CSS)}</style></head><body><main class="solo">'
         f'<section class="slide cover">{header}<h1>{e(verdict(result))}</h1><p class="lede">{lede}</p>{minis}{lead}</section>'
         f"{sections}{engineers(result)}"
         '<p class="foot">A number moving is not proof that the project moved it. This read says whether the number reached the target, not why. '

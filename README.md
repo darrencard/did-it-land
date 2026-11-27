@@ -29,15 +29,15 @@ You need Python 3.11 or later; the scripts say so and stop on anything older. No
 
 ## What you get
 
-One table, then one section per bet. From the test fixture (see "Try it in one minute"):
+One table, then one section per project, in plain words; flag codes, brief files and slugs sit under "For your engineers" at the end. From the test fixture (see "Try it in one minute"):
 
 ```text
-| Payment links | watch | Payment link conversion | 18.1% (2026-11-23) | 18%, 2026-11-30 | Illustrative billing export |
+| Payment links | watch | Payment link conversion | 18.1% (2026-11-23) | 18% or higher, 2026-11-30 | Illustrative billing export, payment_links_weekly.csv |
 
-- watch. Past the bar of 18%, but the call is held: within-noise.
-- Flag, within-noise: 18.1% is 1.48 times the pre-launch spread (0.8) from the pre-launch
-  mean (16.92%), under the 2 needed. Within noise: run an experiment.
-- Next step: Run an experiment before calling it: hold the bet back from a random group and
+- watch. Past the target of 18%, but too close to call.
+- Check: Too close to call: since launch the number sits inside the ups and downs it had
+  before launch.
+- Next step: Run an experiment before calling it: hold the project back from a random group and
   compare Payment link conversion between the two groups. Correct the status shown in the tracker.
   Decides: Lead, Payments squad. Due: 2026-11-30.
 ```

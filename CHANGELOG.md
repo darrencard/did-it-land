@@ -7,6 +7,8 @@
 - Public copy in plain words: project, target, too close to call, the data source. Held calls print plain reasons ("Past the target of 80%, but not called yet: the data source jumped.").
 - The read's figures carry `series`, every reading up to the read, so the page draws the line and prints each point it draws. The `landed` key is unchanged apart from `computed_by`.
 - Tests: the pictures draw only printed figures, green and red appear only beside the words landed and stalled, each aria-label states the answer, and public copy uses plain words; the vendored svgkit matches its pin. Two lint findings fixed.
+- Fix round 2: no text under 11px at any width. The vendored template and svgkit stay byte-identical; `floor_fonts` raises their smaller sizes to 11px as the page is built, and each project's desktop chart is 640 wide, not 720, so its labels stay 11px in the left column. The header prints the plain name, "Did it land?"; the code name prints only for engineers ("Built by did-it-land 0.3.2.").
+- Fix round 2: the Markdown twin uses the page's plain words: project, target, the number, the project file, AI usage per task, and the page's plain checks in place of flag codes. Flag codes, brief files and slugs move to a "For your engineers" section at its end. The README's sample output follows. Tests: no font size under 11px, the header's name, the 640 chart, and no "record", "bet", "bar", "PRD", "ARR" or "tokens" in the public copy of the page or the twin.
 
 ## 0.3.1, 2026-11-26
 
