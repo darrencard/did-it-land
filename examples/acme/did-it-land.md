@@ -97,4 +97,4 @@ A number moving is not proof that the project moved it. This read says whether t
 
 Quote drafting: the cost word is cited from `cost-budget-check 0.3.2`; the read never recomputes it.
 
-With --loop and --bet, the read adds its page to the project file: the `landed` key of `landing/<slug>.json`, and no other key. Built by did-it-land 0.3.3.
+With --loop and --bet, the read adds its page to the project file: the `landed` key of `landing/<slug>.json`, and no other key. Built by did-it-land 0.3.4.

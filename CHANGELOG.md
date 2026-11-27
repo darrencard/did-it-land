@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.4, 2026-11-27
+
+- The scorecard draws every row on one scale (svgkit 1.2.0 `frame_domain`): each value as a share of its own target, so every target tick lines up and rows in different units read against each other. Marks that differ but sit close are drawn 4px apart in value order, so Job scheduler's 2,060 → 2,100 and Payment links' 18.1% against its 18% target read apart. No value changes.
+- Rows stack when the frame is under 800px wide (a container query, as on the site), and the word column wraps at 180px.
+- svgkit 1.2.0, vendored byte-identical from landing-loop 78784ef and pinned in `VENDORED.json`. Tests: no legacy svgkit primitive on the page (rendered with its DeprecationWarning as an error, and `legacy_in` empty), and every target tick in the frame at one x.
+
 ## 0.3.3, 2026-11-27
 
 - The page leads with the scorecard in the grammar of the outcome scorecard on dacard.ai/update: one row per project with its name, a range line (grey dot the average before launch, the status dot the latest reading, a tick for the target, no band), `21.67% → 43% · TARGET 40%` right-aligned, and the status word, with the cost word as text where the cost check set one. Labels and figures are Geist Mono 12px and names Geist 14px as rendered; no text sits inside an SVG and no picture scales. The small multiples and the per-project time charts are gone; every reading still prints in each project's fold.

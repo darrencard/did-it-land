@@ -10,7 +10,7 @@ next. Each project's detail follows; the one this read is about is open, the oth
 in a fold, and flag codes, file names and the record key sit in a last fold for engineers. Public copy uses plain
 words: project, target, inside normal ups and downs.
 
-The scorecard follows the scorecard grammar (svgkit 1.1.0): HTML rows split by hairlines, Geist Mono 12px for
+The scorecard follows the scorecard grammar (svgkit 1.2.0, one scale per frame): HTML rows split by hairlines, Geist Mono 12px for
 labels, figures and words, Geist 14px for names, and a fixed-height range line with no text in it.
 
 Colour means one thing each: green and red only for the words landed and stalled and the dot in the same row, brass
@@ -223,27 +223,34 @@ def better_words(f: dict[str, Any]) -> str:
     return "or higher" if f["bar"]["better"] == "higher" else "or lower"
 
 
-def scorecard_row(b: dict[str, Any]) -> str:
-    """One project: name | range line | before launch → now · TARGET x | status word, and the cost word when set."""
+def scorecard_row(b: dict[str, Any], domain: tuple[float, float]) -> str:
+    """One project: name | range line | before launch → now · TARGET x | status word, and the cost word when set.
+    Every row shares the frame's one scale, each value read as a share of its own target, so the ticks line up."""
     if b["status"] is None:
         return sk.sc_row(b["name"], figure=sk.figure_line("no reading"), word=sk.check_word("not read"))
     f = b["figures"]
     m = f.get("move")
-    picture = sk.range_line(prior=m["baseline_mean"] if m else None, actual=f["current"]["value"], target=f["bar"]["value"], status=b["status"])
+    picture = sk.range_line(
+        prior=m["baseline_mean"] if m else None, actual=f["current"]["value"], target=f["bar"]["value"], status=b["status"], domain=domain, relative=True
+    )
     figure = sk.figure_line(f["current"]["shown"], prior=m["baseline_shown"] if m else None, target=f["bar"]["shown"])
     return sk.sc_row(b["name"], picture=picture, figure=figure, word=sk.status_mark(b["status"]) + cost_word(b))
 
 
 def scorecard(result: dict[str, Any]) -> str:
     """Every project as one row of the scorecard, in the grammar of the /update outcome scorecard."""
+    read = [b for b in result["bets"] if b["status"]]
+    domain = sk.frame_domain(
+        [(b["figures"]["move"]["baseline_mean"] if "move" in b["figures"] else None, b["figures"]["current"]["value"], b["figures"]["bar"]["value"]) for b in read]
+    )
     key = sk.legend("prior", "average before launch") + sk.legend("target", "target")
     return sk.sc_frame(
-        [scorecard_row(b) for b in result["bets"]],
+        [scorecard_row(b, domain) for b in result["bets"]],
         label=verdict(result),
         title="Scorecard",
         head=["Project", "", "Before → now · target", "Status"],
         legend=key,
-        caption="Each row is one project's number: the grey dot is its average before launch, the coloured dot the latest reading, the tick the target.",
+        caption="Each row is one project's number against its own target, so the target ticks line up: the grey dot is its average before launch, the coloured dot the latest reading.",
         illustrative=result["illustrative"],
     )
 

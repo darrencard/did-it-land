@@ -305,6 +305,19 @@ class Html(unittest.TestCase):
         self.assertNotIn("position:absolute", svgkit.SCORECARD_CSS)
         self.assertNotIn('class="chip"', self.page.split("For your engineers", 1)[0])
 
+    def test_no_legacy_svgkit_primitive_draws_on_the_page(self):
+        import warnings
+
+        self.assertEqual(svgkit.legacy_in(self.page), [])
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            render_html.page(self.result)
+
+    def test_one_scale_for_the_frame_so_every_target_tick_lines_up(self):
+        frame = svgkit.frames_in(self.page)[0]
+        ticks = set(re.findall(r'class="tg" x="([^"]+)"', frame))
+        self.assertEqual(len(ticks), 1, ticks)
+
     def test_only_the_focus_project_is_open(self):
         opened = re.findall(r'<details class="proj"( open)?><summary><h2 id="([^"]+)"', self.page)
         self.assertEqual([slug for o, slug in opened if o], [self.result["bets"][0]["slug"]])
