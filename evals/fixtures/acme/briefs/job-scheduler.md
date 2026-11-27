@@ -13,4 +13,4 @@ Illustrative sample brief for Acme, an invented company.
 - **Tokens per task:** none
 - **Price per token:** none
 - **The line:** fixed code. Scheduling is calendar logic with no model call.
-- **Decides the next step:** Head of Product, Field squad
+- **Decides the next step:** Lead, Field squad

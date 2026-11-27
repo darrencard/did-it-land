@@ -35,7 +35,7 @@ from pathlib import Path
 from typing import Any
 
 if sys.version_info < (3, 11):  # noqa: UP036  (the guard exists for older interpreters)
-    raise SystemExit(f"from_run: needs Python 3.11 or later; this is {sys.version.split()[0]}.")
+    raise SystemExit(f"from_run: needs Python 3.11 or later; try python3.12 (this is {sys.version.split()[0]}).")
 
 COLUMNS = ["metric", "date", "value", "source", "last_synced"]
 SOURCES = ("analytics", "warehouse", "billing")

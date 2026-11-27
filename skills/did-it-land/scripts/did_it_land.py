@@ -44,7 +44,7 @@ from pathlib import Path
 from typing import Any
 
 if sys.version_info < (3, 11):  # noqa: UP036  (the guard exists for older interpreters)
-    raise SystemExit(f"did_it_land: needs Python 3.11 or later; this is {sys.version.split()[0]}. On macOS, install one (python.org or Homebrew) and run python3.11 or later.")
+    raise SystemExit(f"did_it_land: needs Python 3.11 or later; try python3.12 (this is {sys.version.split()[0]}).")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -56,6 +56,8 @@ VERSION = "0.3.1"
 STATUSES = ("landed", "watch", "stalled")
 # Under this many pre-launch readings the spread is a rough estimate; the read says so but does not hold the call.
 THIN_BASELINE = 5
+# A next step is never due before the read. When the brief's date has passed, it is due this many days after the read.
+NEXT_STEP_DAYS = 14
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
 METRICS_CSV_HEADER = "metric,date,value,source,last_synced\n"
 BETS_CSV_HEADER = "id,name,shipped,brief,brief_written,presented_status,outcome_metric,outcome_better\n"
@@ -100,6 +102,8 @@ class BetRead:
     brief_path: str | None = None
     unit: str = ""
     context: dict[str, Any] = field(default_factory=dict)
+    cost: dict[str, Any] | None = None  # cost-budget-check's budget check, cited from the record, never recomputed
+    due: str = ""  # when the next step is due: on or after the read date
 
 
 def clean(text: Any, limit: int = 200) -> str:
@@ -249,11 +253,10 @@ def read_bet(bet: dict[str, Any], metrics: dict[str, Metric], as_of: dt.datetime
                     "text": "The brief has changed since the loop record was opened, so the bar may have moved after work began. Restore it, or treat it as a new brief.",
                 }
             )
-        spent = loop.cost_figure(record, "tokens_per_task")
-        if spent is not None and brief.tokens_per_task is not None and spent > brief.tokens_per_task:
-            out.flags.append(
-                {"code": "over-cost-budget", "text": f"The cost record shows {spent:,.10g} tokens per task, over the brief's budget of {brief.tokens_per_task:,.10g}."}
-            )
+        out.cost = loop.cost_check(record)
+        if out.cost and out.cost["budget_status"] == "over budget":
+            # Cited from cost-budget-check. It never changes the status, which comes from the metric alone.
+            out.flags.append({"code": "over-cost-budget", "text": f"Cost is over budget, cited from {out.cost['cited_from']}. It does not change the status."})
     name, how = checks.match_metric(brief.metric, list(metrics))
     if name is None:
         out.not_read = f'The brief names the metric "{clean(brief.metric, 80)}", and the bundle has no data for it. Export it from the source and read again.'
@@ -455,8 +458,9 @@ def read_bet(bet: dict[str, Any], metrics: dict[str, Metric], as_of: dt.datetime
             out.flags.append({"code": verdict.replace(" ", "-"), "text": f"The tracker shows this bet {presented} while {under}."})
 
     codes = {f["code"] for f in out.flags}
+    cost_word = out.cost["budget_status"] if out.cost and out.cost["budget_status"] in loop.BUDGET_WORDS else None
     if status == "landed":
-        step = "Keep the metric on the scorecard, and decide whether to scale the bet."
+        step = "Keep the metric on the scorecard, and decide whether to scale the bet" + (f", given cost is {cost_word}." if cost_word else ".")
     elif "brief-changed" in codes:
         step = "Put the brief back as it was when the record was opened, or open a new record for the new bar."
     elif "brief-after-launch" in codes:
@@ -475,6 +479,8 @@ def read_bet(bet: dict[str, Any], metrics: dict[str, Metric], as_of: dt.datetime
         step = f"Read again at the next reading, and by {brief.by} at the latest."
     if "green-over-red" in codes or "one-step-rosier" in codes:
         step += " Correct the status shown in the tracker."
+    # A next step is dated on or after the read: the brief's date while it is ahead, else NEXT_STEP_DAYS after the read.
+    out.due = str(by if by >= today else today + dt.timedelta(days=NEXT_STEP_DAYS))
     out.status, out.reason, out.figures, out.next_step = status, reason, figures, step
     return out
 
@@ -523,7 +529,9 @@ def landed_key(b: dict[str, Any], as_of: str) -> dict[str, Any]:
         "figures": figs,
         "flags": b["flags"],
         "next_step": b["next_step"],
+        "next_step_due": b["due"],
         "decides": b["decides"],
+        **({"cost_check": {"budget_status": b["cost"]["budget_status"], "cited_from": b["cost"]["cited_from"]}} if b.get("cost") else {}),
     }
 
 
@@ -557,7 +565,8 @@ def to_markdown(result: dict[str, Any]) -> str:
             lines.append(b["not_read"])
             continue
         f = b["figures"]
-        lines.append(f"- **{b['status']}**. {b['reason']}")
+        cost = f" Cost: {b['cost']['budget_status']}, cited from {b['cost']['cited_from']}." if b.get("cost") else ""
+        lines.append(f"- **{b['status']}**. {b['reason']}{cost}")
         better = "higher" if f["bar"]["better"] == "higher" else "lower"
         line = f"- {b['metric']} is {f['current']['shown']} on {f['current']['date']}, against a bar of {f['bar']['shown']} ({better} is better) by {f['bar']['by']}."
         if "at_date" in f:
@@ -575,9 +584,11 @@ def to_markdown(result: dict[str, Any]) -> str:
         for key, figs in b["context"].items():
             shown = "; ".join(f"{c['name']} {c['value']:,.10g}{' ' + c['unit'] if c['unit'] else ''} ({c['source']})" for c in figs)
             lines.append(f"- Context from the loop record, {key}: {shown}.")
+        if b.get("cost"):
+            lines.append(f"- Cost check, cited from the loop record: {b['cost']['text']}.")
         for flag in b["flags"]:
             lines.append(f"- Flag, {flag['code']}: {flag['text']}")
-        lines.append(f"- Next step: {b['next_step']} Decides: {b['decides']}.")
+        lines.append(f"- Next step: {b['next_step']} Decides: {b['decides']}. Due: {b['due']}.")
     lines += ["", "A metric moving is not proof that the bet moved it. This read says whether the metric reached the bar, not why."]
     return "\n".join(lines) + "\n"
 
@@ -678,6 +689,7 @@ def main() -> int:
     ap.add_argument("--loop", help="read: the working folder holding landing/<bet>.json; reads each record, writes only its landed key")
     ap.add_argument("--bet", help="read: with --loop, write only this bet's record (its slug)")
     ap.add_argument("--html", help="read: write the HTML page to this path")
+    ap.add_argument("--md", help="read: write the Markdown twin of the page to this path")
     ap.add_argument("--out", help="read: a folder to write read.md, read.html and read.json into")
     args = ap.parse_args()
     if args.command == "init":
@@ -699,6 +711,9 @@ def main() -> int:
 
             Path(args.html).write_text(render_html.page(result), encoding="utf-8")
             print(f"did_it_land: wrote {args.html}", file=sys.stderr)
+        if args.md:
+            Path(args.md).write_text(to_markdown(result), encoding="utf-8")
+            print(f"did_it_land: wrote {args.md}", file=sys.stderr)
         if args.out:
             import render_html  # noqa: PLC0415  (only needed for --out)
 

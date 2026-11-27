@@ -35,11 +35,20 @@ main.solo{margin-left:0}
 .rows>div{display:grid;grid-template-columns:168px minmax(0,1fr);gap:6px 36px;border-top:1px solid var(--line);padding:14px 0}
 .rows>div>span:first-child{font:400 10px/22px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
 .rows>div>span:last-child{color:var(--t2);font-size:13.5px}
-.rows .chip{font:400 10px/16px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t2);
+.rows .chip,.head .chip{font:400 10px/16px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t1);
 border:1px solid var(--line2);border-radius:3px;padding:1px 6px;margin-right:10px;white-space:nowrap}
 .solo .need{margin-top:24px}
 .solo .need-r{margin-top:0}
 .sc-n .sc-d{max-width:46ch}
+.head .marks{display:flex;align-items:baseline;gap:12px}
+.head .chip{margin-right:0}
+.summary{margin:0 0 8px;padding:0;list-style:none;max-width:72ch}
+.summary li{font-size:14px;line-height:1.6;color:var(--t2);border-top:1px solid var(--line);padding:6px 0}
+.summary li b{font:400 10px/22px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t3);font-weight:400;display:inline-block;min-width:96px}
+.solo details{margin-top:8px}
+.solo details>.rows{margin-top:0}
+::selection{background:var(--t1);color:var(--bg)}
+:focus-visible{outline-color:var(--t1)}
 .foot{max-width:1120px;margin:0 auto;padding:28px 40px 64px;color:var(--t3);font-size:12px}
 @media (max-width:980px){.rows>div{grid-template-columns:1fr;gap:2px}.foot{padding:24px 16px 48px}.solo .slide.cover{padding-top:48px}}
 """
@@ -123,9 +132,15 @@ def scorecard(result: dict[str, Any]) -> str:
     return f'<div class="tablewrap sc">{head}{"".join(rows)}</div>'
 
 
+def cost_chip(b: dict[str, Any]) -> str:
+    """cost-budget-check's word, cited beside the call in ink. It is a build check, never a status colour."""
+    c = b.get("cost")
+    return f'<span class="chip" title="cited from {e(c["cited_from"])}">cost {e(c["budget_status"])}</span>' if c else ""
+
+
 def bet_section(b: dict[str, Any], n: int) -> str:
     meta = f'<div class="meta"><span>Bet {n:02d}</span><span>{e(b["id"])}</span></div>'
-    head = f'<div class="head"><h2 id="{e(b["slug"])}">{e(b["name"])}</h2>{status_mark(b["status"])}</div>'
+    head = f'<div class="head"><h2 id="{e(b["slug"])}">{e(b["name"])}</h2><span class="marks">{cost_chip(b)}{status_mark(b["status"])}</span></div>'
     if b["status"] is None:
         return f'<section class="slide">{meta}{head}<p class="lede">{e(b["not_read"])}</p></section>'
     f = b["figures"]
@@ -142,14 +157,38 @@ def bet_section(b: dict[str, Any], n: int) -> str:
         rows.append(("Outcome", f"{o['metric']}: {o['from']:g} to {o['to']:g} over the same window ({o['n']} readings). Source: {o['source']}."))
     for key, figs in b["context"].items():
         rows.append((f"Loop: {key}", "; ".join(f"{c['name']} {c['value']:,.10g}{' ' + c['unit'] if c['unit'] else ''} ({c['source']})" for c in figs) + "."))
+    if b.get("cost"):
+        rows.append(("Cost check", f"{b['cost']['text']}. Cited from the loop record, not recomputed; it never changes the status."))
     body = "".join(f"<div><span>{e(k)}</span><span>{e(v)}</span></div>" for k, v in rows)
     flags = "".join(f'<div><span>Flag</span><span><span class="chip">{e(fl["code"])}</span>{e(fl["text"])}</span></div>' for fl in b["flags"])
     call = (
         f'<div class="need"><b>Next step</b><div class="need-r"><p>{e(b["next_step"])}</p>'
         f'<span class="mono" style="color:var(--brass);font-size:11px">{e(b["decides"])}</span>'
-        f'<span class="mono t3" style="font-size:11px">by {e(f["bar"]["by"])}</span></div></div>'
+        f'<span class="mono" style="color:var(--brass);font-size:11px">due {e(b["due"])}</span></div></div>'
     )
-    return f'<section class="slide">{meta}{head}<p class="lede">{e(b["reason"])}</p><div class="rows">{body}{flags}</div>{call}</section>'
+    detail = f'<details><summary>Figures and checks ({len(rows) + len(b["flags"])})</summary><div class="rows">{body}{flags}</div></details>'
+    return f'<section class="slide">{meta}{head}<p class="lede">{e(b["reason"])}</p>{call}{detail}</section>'
+
+
+def summary(result: dict[str, Any]) -> str:
+    """Five lines a leader reads in 30 seconds: the bets under each word, cost, and the next steps due."""
+    read = [b for b in result["bets"] if b["status"]]
+    lines = []
+    for word in ("landed", "watch", "stalled"):
+        names = [b["name"] for b in read if b["status"] == word]
+        lines.append((word, ", ".join(names) if names else "none"))
+    over = [b["name"] for b in read if b.get("cost") and b["cost"]["budget_status"] == "over budget"]
+    checked = [b for b in read if b.get("cost")]
+    if not checked:
+        cost = "No cost record yet: run cost-budget-check."
+    else:
+        cost = (f"Over budget: {', '.join(over)}" if over else "Within budget") + f" ({len(checked)} of {len(read)} bets checked, cited from cost-budget-check)."
+    lines.append(("cost", cost))
+    dues = sorted(b["due"] for b in read)
+    nxt = f"{len(dues)} next steps, the first due {dues[0]}; each names who decides." if dues else "None."
+    lines.append(("next steps", nxt))
+    label = {w: f"<b>{status_mark(w)}</b>" for w in ("landed", "watch", "stalled")}
+    return '<ul class="summary">' + "".join(f"<li>{label.get(k, f'<b>{e(k)}</b>')}{e(v)}</li>" for k, v in lines) + "</ul>"
 
 
 def page(result: dict[str, Any]) -> str:
@@ -167,7 +206,7 @@ def page(result: dict[str, Any]) -> str:
         '<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         f'<title>{e(title)}</title><style>{stylesheet()}{PAGE_CSS}</style></head><body><main class="solo">'
         f'<section class="slide cover"><div class="brand">{MARK}<span translate="no">DACARD</span></div><div class="meta">{meta_html}</div>'
-        f'<h1>{e(title)}</h1><p class="lede">{e(lede)}</p></section>'
+        f'<h1>{e(title)}</h1><p class="lede">{e(lede)}</p>{summary(result)}</section>'
         f'<section class="slide"><div class="meta"><span>Scorecard</span></div><h2>Every bet, against its bar</h2>{scorecard(result)}</section>'
         f"{sections}"
         '<p class="foot">A metric moving is not proof that the bet moved it. This read says whether the metric reached the bar, not why. '

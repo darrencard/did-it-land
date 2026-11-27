@@ -13,4 +13,4 @@ Illustrative sample brief for Acme, an invented company.
 - **Tokens per task:** 1,500
 - **Price per token:** $0.000003
 - **The line:** model call. The model writes the reminder wording; the schedule is fixed code.
-- **Decides the next step:** Head of Product, Payments squad
+- **Decides the next step:** Lead, Payments squad

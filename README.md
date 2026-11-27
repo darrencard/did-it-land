@@ -29,7 +29,7 @@ You need Python 3.11 or later; the scripts say so and stop on anything older. No
 
 ## What you get
 
-One table, then one section per bet. From the sample company:
+One table, then one section per bet. From the test fixture (see "Try it in one minute"):
 
 ```text
 | Payment links | watch | Payment link conversion | 18.1% (2026-11-23) | 18%, 2026-11-30 | Illustrative billing export |
@@ -39,7 +39,7 @@ One table, then one section per bet. From the sample company:
   mean (16.92%), under the 2 needed. Within noise: run an experiment.
 - Next step: Run an experiment before calling it: hold the bet back from a random group and
   compare Payment link conversion between the two groups. Correct the status shown in the tracker.
-  Decides: Head of Product, Payments squad.
+  Decides: Lead, Payments squad. Due: 2026-11-30.
 ```
 
 ## What it calls
@@ -60,7 +60,7 @@ One table, then one section per bet. From the sample company:
 
 ## Try it in one minute
 
-Acme is invented: invoicing software for trades businesses, eight shipped bets, every figure illustrative.
+This runs on a second, separate fixture kept for the tests, not the canonical sample: an invented Acme (invoicing software for trades businesses) with eight shipped bets, where the canonical sample below has seven. Every figure is illustrative.
 
 ```bash
 python3.12 skills/did-it-land/scripts/did_it_land.py read evals/fixtures/acme/bundle.json
@@ -70,13 +70,13 @@ Your own data: `did_it_land.py init my-read` sets up two CSVs (one row per metri
 
 ## Sample
 
-[examples/acme/did-it-land.html](examples/acme/did-it-land.html) reads Acme's seven bets from the canonical Landing Loop briefs, with `quote-drafting` followed end to end, and [examples/acme/landing/quote-drafting.json](examples/acme/landing/quote-drafting.json) holds the `landed` key it writes. Regenerate both from the repository root (Python 3.11 or later):
+[examples/acme/did-it-land.html](examples/acme/did-it-land.html) reads Acme's seven bets from the canonical Landing Loop briefs, with `quote-drafting` followed end to end; [examples/acme/did-it-land.md](examples/acme/did-it-land.md) is its Markdown twin. It starts from the record as cost-budget-check left it ([examples/acme/upstream](examples/acme/upstream)), so the landed call prints that skill's budget check beside it (over budget, cited, never recomputed), and [examples/acme/landing/quote-drafting.json](examples/acme/landing/quote-drafting.json) adds only the `landed` key. Regenerate all three from the repository root (Python 3.11 or later):
 
 ```bash
-python3 skills/did-it-land/scripts/did_it_land.py read examples/acme/bundle.json --loop examples/acme --bet quote-drafting --html examples/acme/did-it-land.html
+python3 examples/acme/sample.py
 ```
 
-A test checks the command reproduces the committed page byte for byte.
+A test checks the command reproduces the committed files byte for byte.
 
 ## Go deeper
 

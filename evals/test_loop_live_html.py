@@ -97,13 +97,46 @@ class LoopRecord(unittest.TestCase):
         r = json.loads(p.read_text(encoding="utf-8"))
         src = "Illustrative eval-kit run"
         r["evals"] = {"pass_rate": loop.figure(0.91, "share", src, "2026-11-01", "2026-11-20", "2026-11-20")}
-        r["cost"] = {"tokens_per_task": loop.figure(12000, "tokens", "Illustrative usage export", "2026-11-01", "2026-11-20", "2026-11-20")}
+        fig = loop.figure(12000, "tokens per task", "Illustrative usage export", "2026-11-01", "2026-11-20", "2026-11-20")
+        budget = loop.figure(9000, "tokens per task", "landing brief", "2026-11-01", "2026-11-20", "2026-11-20")
+        share = loop.figure(0.3333, "share over budget", "cost-budget-check", "2026-11-01", "2026-11-20", "2026-11-20")
+        line = {"actual": fig, "budget": budget, "against_budget": share, "budget_status": "over budget"}
+        r["cost"] = {"tool": "cost-budget-check 0.3.1", "budget_status": "over budget", "lines": {"tokens_per_task": line}}
         p.write_text(json.dumps(r), encoding="utf-8")
         b = next(b for b in self.run_read()["bets"] if b["id"] == "B1")
         self.assertEqual(b["status"], "landed")  # context never changes the call
         self.assertEqual(b["context"]["evals"][0]["value"], 0.91)
+        self.assertNotIn("cost", b["context"])  # cited whole by the cost check, never re-listed
         self.assertIn("over-cost-budget", {f["code"] for f in b["flags"]})
-        self.assertIn("Context from the loop record, evals", did_it_land.to_markdown(did_it_land.read(self.bundle, self.work)))
+        self.assertEqual(b["cost"]["budget_status"], "over budget")
+        self.assertIn("given cost is over budget", b["next_step"])
+        md = did_it_land.to_markdown(did_it_land.read(self.bundle, self.work))
+        self.assertIn("Context from the loop record, evals", md)
+        self.assertIn("Cost: over budget, cited from cost-budget-check 0.3.1.", md)
+        self.assertIn("tokens per task 12,000 against 9,000, 33% over", md)
+
+    def test_the_cost_word_is_cited_never_recomputed(self):
+        # The record says within budget although the actual is above the budget: the read prints the record's word.
+        self.run_read()
+        p = loop.path_for(self.work, "quote-drafting-assistant")
+        r = json.loads(p.read_text(encoding="utf-8"))
+        fig = loop.figure(12000, "tokens per task", "Illustrative usage export", "2026-11-01", "2026-11-20", "2026-11-20")
+        r["cost"] = {"tool": "cost-budget-check 0.3.1", "budget_status": "within budget", "lines": {"tokens_per_task": {"actual": fig, "budget": fig, "budget_status": "within budget"}}}
+        p.write_text(json.dumps(r), encoding="utf-8")
+        b = next(b for b in self.run_read()["bets"] if b["id"] == "B1")
+        self.assertEqual(b["cost"]["budget_status"], "within budget")
+        self.assertNotIn("over-cost-budget", {f["code"] for f in b["flags"]})
+        self.assertTrue(b["next_step"].endswith("given cost is within budget."))
+
+    def test_a_cost_key_without_a_budget_word_reads_not_checked(self):
+        self.run_read()
+        p = loop.path_for(self.work, "quote-drafting-assistant")
+        r = json.loads(p.read_text(encoding="utf-8"))
+        r["cost"] = {"tokens_per_task": loop.figure(12000, "tokens per task", "Illustrative usage export", "2026-11-01", "2026-11-20", "2026-11-20")}
+        p.write_text(json.dumps(r), encoding="utf-8")
+        b = next(b for b in self.run_read()["bets"] if b["id"] == "B1")
+        self.assertEqual(b["cost"]["text"], "cost not checked: run cost-budget-check")
+        self.assertTrue(b["next_step"].endswith("decide whether to scale the bet."))
 
     def test_a_brief_edited_after_the_record_opened_holds_landed(self):
         self.run_read()
@@ -218,9 +251,15 @@ class Sample(unittest.TestCase):
             committed_record = (self.EX / "landing" / "quote-drafting.json").read_bytes()
             shutil.rmtree(work / "examples" / "acme" / "landing")
             (work / "examples" / "acme" / "did-it-land.html").unlink()
+            (work / "examples" / "acme" / "did-it-land.md").unlink()
             subprocess.run([sys.executable, *cmd[1:]], cwd=work, check=True, capture_output=True)
             self.assertEqual((work / "examples/acme/did-it-land.html").read_bytes(), (self.EX / "did-it-land.html").read_bytes())
+            self.assertEqual((work / "examples/acme/did-it-land.md").read_bytes(), (self.EX / "did-it-land.md").read_bytes())
             self.assertEqual((work / "examples/acme/landing/quote-drafting.json").read_bytes(), committed_record)
+
+    def test_the_markdown_twin_is_the_read(self):
+        result = did_it_land.read(self.EX / "bundle.json", self.EX)
+        self.assertEqual((self.EX / "did-it-land.md").read_text(encoding="utf-8"), did_it_land.to_markdown(result))
 
     def test_sample_reads_seven_bets_with_all_three_words(self):
         result = did_it_land.read(self.EX / "bundle.json")
@@ -233,11 +272,52 @@ class Sample(unittest.TestCase):
         for b in canon["bets"]:
             self.assertEqual(Path(b["brief"]).stem, b["slug"])
 
-    def test_record_holds_only_the_landed_key(self):
+    def test_record_adds_only_the_landed_key_to_upstream(self):
         record = json.loads((self.EX / "landing" / "quote-drafting.json").read_text(encoding="utf-8"))
-        self.assertEqual(set(record), {"schema", "bet", "brief", "landed"})
+        upstream = json.loads((self.EX / "upstream" / "quote-drafting.json").read_text(encoding="utf-8"))
+        self.assertEqual(set(record), set(upstream) | {"landed"})
+        for key in upstream:
+            self.assertEqual(record[key], upstream[key])  # read, cited, never rewritten
         self.assertEqual(record["brief"]["path"], "briefs/quote-drafting.md")
         self.assertEqual(record["landed"]["status"], "landed")
+
+    def test_landed_prints_the_cited_cost_check_beside_the_call(self):
+        record = json.loads((self.EX / "landing" / "quote-drafting.json").read_text(encoding="utf-8"))
+        landed = record["landed"]
+        self.assertEqual(landed["cost_check"], {"budget_status": record["cost"]["budget_status"], "cited_from": record["cost"]["tool"]})
+        self.assertEqual(landed["cost_check"]["budget_status"], "over budget")
+        self.assertIn("given cost is over budget", landed["next_step"])
+        md = (self.EX / "did-it-land.md").read_text(encoding="utf-8")
+        self.assertIn("- **landed**. Past the bar of 40% by 2026-11-15. Cost: over budget, cited from cost-budget-check 0.3.1.", md)
+        self.assertIn("cost per task $0.0338 against $0.027, 25% over", md)
+        self.assertIn('<span class="chip" title="cited from cost-budget-check 0.3.1">cost over budget</span>', (self.EX / "did-it-land.html").read_text(encoding="utf-8"))
+
+    def test_next_steps_are_due_on_or_after_the_read(self):
+        result = did_it_land.read(self.EX / "bundle.json", self.EX)
+        for b in result["bets"]:
+            if b["status"]:
+                self.assertGreaterEqual(b["due"], result["as_of"][:10], b["name"])
+        record = json.loads((self.EX / "landing" / "quote-drafting.json").read_text(encoding="utf-8"))
+        self.assertGreaterEqual(record["landed"]["next_step_due"], record["landed"]["as_of"][:10])
+
+    def test_the_quote_drafting_move_is_a_realistic_multiple_of_the_spread(self):
+        record = json.loads((self.EX / "landing" / "quote-drafting.json").read_text(encoding="utf-8"))
+        f = record["landed"]["figures"]
+        self.assertTrue(3 <= f["move_z"]["value"] <= 6, f["move_z"]["value"])
+        self.assertEqual((f["current"]["value"], f["at_date"]["value"], f["bar"]["value"]), (43.0, 41.0, 40.0))
+
+    def test_selection_and_focus_print_in_ink(self):
+        page = (self.EX / "did-it-land.html").read_text(encoding="utf-8")
+        css = page.split("<style>", 1)[1].split("</style>", 1)[0]
+        # The vendored stylesheet paints them green; this page's own rules come after it and win.
+        self.assertGreater(css.rindex("::selection{background:var(--t1)"), css.rindex("::selection{background:var(--landed)"))
+        self.assertGreater(css.rindex(":focus-visible{outline-color:var(--t1)}"), css.rindex(":focus-visible{outline:2px solid var(--landed)"))
+
+    def test_the_page_opens_with_a_five_line_summary(self):
+        page = (self.EX / "did-it-land.html").read_text(encoding="utf-8")
+        block = page.split('<ul class="summary">', 1)[1].split("</ul>", 1)[0]
+        self.assertEqual(block.count("<li>"), 5)
+        self.assertIn("<details>", page)
 
 
 if __name__ == "__main__":

@@ -49,6 +49,17 @@ class ReadmeSample(unittest.TestCase):
             self.assertIn(" ".join(item.split()), output)
 
 
+class PythonFloor(unittest.TestCase):
+    def test_every_entry_script_checks_the_version_before_anything_else(self):
+        for p in [SCRIPTS / "did_it_land.py", SCRIPTS / "from_csv.py", SCRIPTS / "from_run.py", ROOT / "examples/acme/sample.py"]:
+            text = p.read_text(encoding="utf-8")
+            guard = text.index("if sys.version_info < (3, 11)")
+            self.assertIn("needs Python 3.11 or later; try python3.12", text, p)
+            for later in ("sys.path.insert", "open(", "read_text(", "write_text(", "shutil."):
+                if later in text:
+                    self.assertLess(guard, text.index(later), f"{p}: {later} before the version check")
+
+
 class Versions(unittest.TestCase):
     def test_versions_agree(self):
         plugin = json.loads((ROOT / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))["version"]

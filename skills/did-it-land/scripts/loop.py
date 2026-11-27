@@ -81,11 +81,14 @@ def _figures_in(obj: Any, prefix: str = "") -> list[tuple[str, dict[str, Any]]]:
 
 
 def context(record: dict[str, Any] | None) -> dict[str, list[dict[str, Any]]]:
-    """The figures other skills left in the record, by key, shown beside the read as context. They never change the status."""
+    """The figures eval-kit left in the record, shown beside the read as context. They never change the status.
+
+    `cost` is not listed here: its budget check is cited whole by cost_check(), never re-listed or recomputed.
+    """
     if not record:
         return {}
     out: dict[str, list[dict[str, Any]]] = {}
-    for key in ("evals", "cost"):
+    for key in ("evals",):
         figs = _figures_in(record.get(key))
         if figs:
             out[key] = [
@@ -96,12 +99,57 @@ def context(record: dict[str, Any] | None) -> dict[str, list[dict[str, Any]]]:
     return {k: v for k, v in out.items() if v}
 
 
-def cost_figure(record: dict[str, Any] | None, name: str) -> float | None:
-    """A cost figure the cost-budget-check skill wrote, by its last name part (tokens_per_task, price_per_token)."""
-    for full, f in _figures_in((record or {}).get("cost")):
-        if full.split(".")[-1] == name and isinstance(f.get("value"), int | float) and not isinstance(f.get("value"), bool):
-            return float(f["value"])
-    return None
+BUDGET_WORDS = ("within budget", "over budget")
+COST_LINES = (("cost_per_task", "cost per task"), ("tokens_per_task", "tokens per task"), ("price_per_token", "price per token"))
+
+
+def _num(f: Any) -> float | None:
+    v = f.get("value") if isinstance(f, dict) else None
+    return float(v) if isinstance(v, int | float) and not isinstance(v, bool) else None
+
+
+def _shown(value: float, unit: str) -> str:
+    """A figure as cost-budget-check wrote it, formatted for reading. Formatting only: nothing is recomputed."""
+    if unit.startswith("USD"):
+        text = f"{value:.8f}" if abs(value) < 0.01 else f"{value:.4f}"
+        return "$" + text.rstrip("0").rstrip(".")
+    if unit.startswith("tokens"):
+        return f"{value:,.0f}"
+    return f"{value:,.6g}"
+
+
+def cost_check(record: dict[str, Any] | None) -> dict[str, Any] | None:
+    """cost-budget-check's own budget check, cited from the record's `cost` key and never recomputed.
+
+    None when the record holds no `cost` key. When the key holds no budget word, the check reads "not checked".
+    Each line keeps cost-budget-check's word, its actual and budget figures, and its share over or under budget.
+    """
+    cost = (record or {}).get("cost")
+    if not isinstance(cost, dict):
+        return None
+    tool = str(cost.get("tool") or "cost-budget-check")[:80]
+    word = cost.get("budget_status")
+    if word not in BUDGET_WORDS:
+        return {"budget_status": "not checked", "cited_from": tool, "lines": [], "window": None, "text": "cost not checked: run cost-budget-check"}
+    lines = []
+    window = None
+    for key, label in COST_LINES:
+        ln = (cost.get("lines") or {}).get(key)
+        if not isinstance(ln, dict):
+            continue
+        actual, budget, share = _num(ln.get("actual")), _num(ln.get("budget")), _num(ln.get("against_budget"))
+        if actual is None or budget is None or ln.get("budget_status") not in BUDGET_WORDS:
+            continue
+        unit = str(ln["actual"].get("unit", ""))
+        window = window or (ln["actual"].get("window") or {})
+        line = {"name": label, "budget_status": ln["budget_status"], "actual": _shown(actual, unit), "budget": _shown(budget, unit), "unit": unit}
+        if share is not None:
+            line["share"] = f"{abs(share) * 100:.0f}% {'over' if share > 0 else 'under'}"
+        lines.append(line)
+    parts = [f"{ln['name']} {ln['actual']} against {ln['budget']}" + (f", {ln['share']}" if "share" in ln else "") for ln in lines]
+    when = f", {window.get('from')} to {window.get('to')}" if window and window.get("from") else ""
+    text = f"{word} ({tool}{when})" + (": " + "; ".join(parts) if parts else "")
+    return {"budget_status": word, "cited_from": tool, "lines": lines, "window": window, "text": text}
 
 
 def write(folder: Path, bet_slug: str, brief_path: Path, landed: dict[str, Any]) -> Path:

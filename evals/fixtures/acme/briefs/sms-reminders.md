@@ -13,4 +13,4 @@ Illustrative sample brief for Acme, an invented company.
 - **Tokens per task:** none
 - **Price per token:** none
 - **The line:** fixed code. Templates and send rules only.
-- **Decides the next step:** Head of Product, Messaging squad
+- **Decides the next step:** Lead, Messaging squad

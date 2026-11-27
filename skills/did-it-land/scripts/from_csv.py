@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any
 
 if sys.version_info < (3, 11):  # noqa: UP036  (the guard exists for older interpreters)
-    raise SystemExit(f"from_csv: needs Python 3.11 or later; this is {sys.version.split()[0]}.")
+    raise SystemExit(f"from_csv: needs Python 3.11 or later; try python3.12 (this is {sys.version.split()[0]}).")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
