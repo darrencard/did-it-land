@@ -10,7 +10,16 @@ A free Claude skill that reads each shipped bet against its landing brief and sa
 
 **How it works:** Python computes every call and every figure from your own exports, each with its source. Claude writes around the read and never changes it, and a check blocks prose that claims more than the data shows.
 
-## Install: paste this into Claude Code
+## Install
+
+In Claude Code:
+
+```text
+/plugin marketplace add darrencard/landing-loop
+/plugin install did-it-land@landing-loop
+```
+
+Standalone, paste this into Claude Code:
 
 ```text
 Install the did-it-land skill from https://github.com/darrencard/did-it-land: clone it, find a Python 3.11 or later on this machine (macOS python3 is often 3.9), run the tests with it (python -m unittest discover -s evals), and copy skills/did-it-land into ~/.claude/skills/did-it-land. Then run a post-launch read on my shipped bets: find each one's landing brief and its metric readings in the tools connected to this session (PostHog, Amplitude, Mixpanel or Stripe first, through the skill's collectors; CSV for anything else), ask me only for what you cannot find, and show the read exactly as the script prints it, with the HTML page.
@@ -74,3 +83,5 @@ A test checks the command reproduces the committed page byte for byte.
 - [SKILL.md](skills/did-it-land/SKILL.md): the bundle format, the status rule, every check and its limits.
 - The landing brief is the same one the [Product & Technology Leader Report](https://github.com/darrencard/product-engineering-update) uses.
 - Python 3.11 or later, standard library only, no network calls. MIT licence.
+
+Claude and Claude Code are trademarks of Anthropic, PBC. These skills are independent and not affiliated with or endorsed by Anthropic.
