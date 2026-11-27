@@ -77,6 +77,6 @@
 - Since launch on 2026-10-05: pre-launch mean 61.5% over 4 readings, then 95%, a move of +33.5, 58.02 times the pre-launch spread (0.58).
 - Flag, source-jumpy: The latest step (30) is more than 5 times this source's usual step (1). Verify the source before trusting it.
 - Flag, thin-baseline: The pre-launch spread comes from 4 readings, so the noise band itself is rough. Weigh the noise call lightly.
-- Next step: Fix or verify the source, then read again. If a jump is real, record who checked it in verified_jumps. Decides: Head of Finance Product, Ledger squad. Due: 2026-12-31.
+- Next step: Fix or verify the source, then read again. If a jump is real, record who checked it in verified_jumps. Decides: Head of Product, Ledger squad. Due: 2026-12-31.
 
 A metric moving is not proof that the bet moved it. This read says whether the metric reached the bar, not why.
