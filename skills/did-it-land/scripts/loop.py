@@ -1,4 +1,4 @@
-"""The Landing Loop record: one JSON file per bet, landing/<bet-slug>.json, shared by five skills and the Leader Report.
+"""The Landing Loop record: one JSON file per bet, landing/<bet-slug>.json, shared by the eleven Landing Loop skills, the Leader Report among them.
 
 did-it-land reads the whole record and writes only its own key, `landed`. Every other key (portfolio, spec,
 evals, cost, and any key a later skill adds) is kept exactly as it was found. Every figure written carries
