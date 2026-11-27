@@ -4,7 +4,7 @@ description: A post-launch read that says whether shipped work landed. For each 
 license: MIT. See LICENSE in the repository root.
 metadata:
   author: Dacard
-  version: "0.3.1"
+  version: "0.3.2"
 ---
 
 # Did it land?
@@ -85,4 +85,4 @@ A reading after the date does not count towards landing. A stale or jumpy source
 
 ## Requirements
 
-Python 3.11 or later. Standard library only. `scripts/landing_brief.py`, the collectors in `scripts/vendor/` and `assets/vendor/template.html` are copied unchanged from the Product & Technology Leader Report at the commit in `VENDORED.json`; a test checks each file's hash, so every skill in the loop reads the brief the same way.
+Python 3.11 or later. Standard library only. `scripts/landing_brief.py`, the collectors in `scripts/vendor/` and `assets/vendor/template.html` are copied unchanged from the Product & Technology Leader Report at the commit in `VENDORED.json`; a test checks each file's hash, so every skill in the loop reads the brief the same way. `scripts/vendor/svgkit.py`, which draws the page's pictures, is copied unchanged from landing-loop at the commit in the same file's `landing-loop` entry.

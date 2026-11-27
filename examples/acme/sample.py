@@ -32,7 +32,7 @@ def main() -> int:
         sys.executable, "skills/did-it-land/scripts/did_it_land.py", "read", str(HERE / "bundle.json"),
         "--loop", str(HERE), "--bet", BET, "--html", str(HERE / "did-it-land.html"), "--md", str(HERE / "did-it-land.md"),
     ]  # fmt: skip
-    done = subprocess.run(cmd, cwd=ROOT, stdout=subprocess.DEVNULL, check=False)
+    done = subprocess.run(cmd, cwd=ROOT, stdout=subprocess.DEVNULL, check=False)  # noqa: S603  (fixed arguments)
     if done.returncode == 0:
         print(f"sample: wrote did-it-land.html, did-it-land.md and landing/{BET}.json in {HERE}")
     return done.returncode

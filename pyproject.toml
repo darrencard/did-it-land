@@ -1,6 +1,6 @@
 [project]
 name = "did-it-land"
-version = "0.3.1"
+version = "0.3.2"
 description = "A Claude skill that reads each shipped bet against its landing brief and calls landed, watch or stalled."
 requires-python = ">=3.11"
 # Standard library only, on purpose: the scripts run inside sandboxes that cannot install packages.
@@ -22,3 +22,5 @@ select = ["E", "F", "I", "B", "UP", "SIM", "S"]
 "evals/**" = ["S603", "S101"]
 # Vendored unchanged from the landing-brief skill, which targets Python 3.9.
 "skills/did-it-land/scripts/landing_brief.py" = ["UP"]
+# The page's CSS and plain-words tables read best one rule or entry per line.
+"skills/did-it-land/scripts/render_html.py" = ["E501"]

@@ -17,6 +17,7 @@ import did_it_land
 import from_run
 import loop
 import render_html
+import svgkit
 
 SKILL = SCRIPTS.parent
 LIVE = FIXTURE.parent.parent / "live"
@@ -34,6 +35,14 @@ class Pins(unittest.TestCase):
         for rel, info in manifest["files"].items():
             digest = hashlib.sha256((SKILL / rel).read_bytes()).hexdigest()
             self.assertEqual(digest, info["sha256"], f"{rel} changed. Copy it again from the pinned commit and update VENDORED.json.")
+
+    def test_svgkit_matches_its_landing_loop_pin(self):
+        pin = json.loads((SKILL / "VENDORED.json").read_text(encoding="utf-8"))["landing-loop"]
+        self.assertRegex(pin["commit"], r"^[0-9a-f]{40}$")
+        self.assertEqual(set(pin["files"]), {"scripts/vendor/svgkit.py"})
+        for rel, info in pin["files"].items():
+            digest = hashlib.sha256((SKILL / rel).read_bytes()).hexdigest()
+            self.assertEqual(digest, info["sha256"], f"{rel} changed. Copy it again from landing-loop at the pinned commit and update VENDORED.json.")
 
     def test_brief_parser_is_the_one_the_loop_shares(self):
         # The same hash spec-auditor pins, so every skill in the loop reads the brief the same way.
@@ -121,7 +130,11 @@ class LoopRecord(unittest.TestCase):
         p = loop.path_for(self.work, "quote-drafting-assistant")
         r = json.loads(p.read_text(encoding="utf-8"))
         fig = loop.figure(12000, "tokens per task", "Illustrative usage export", "2026-11-01", "2026-11-20", "2026-11-20")
-        r["cost"] = {"tool": "cost-budget-check 0.3.1", "budget_status": "within budget", "lines": {"tokens_per_task": {"actual": fig, "budget": fig, "budget_status": "within budget"}}}
+        r["cost"] = {
+            "tool": "cost-budget-check 0.3.1",
+            "budget_status": "within budget",
+            "lines": {"tokens_per_task": {"actual": fig, "budget": fig, "budget_status": "within budget"}},
+        }
         p.write_text(json.dumps(r), encoding="utf-8")
         b = next(b for b in self.run_read()["bets"] if b["id"] == "B1")
         self.assertEqual(b["cost"]["budget_status"], "within budget")
@@ -217,8 +230,46 @@ class Html(unittest.TestCase):
             self.assertIn(f">{word}</span>", self.page)
 
     def test_illustrative_and_not_proof(self):
-        self.assertIn('<span class="ill">Illustrative</span>', self.page)
+        self.assertIn('<span class="sk-ill">Illustrative</span>', self.page)
+        self.assertIn(":root{--ill:#74A5DA}", self.page, "the Illustrative tag is blue")
         self.assertIn("is not proof", self.page)
+
+    def test_the_visuals_draw_only_figures_the_page_prints(self):
+        self.assertGreater(len(svgkit.svgs_in(self.page)), 7)
+        self.assertEqual(svgkit.unprinted(self.page), [])
+        text = svgkit.page_text(self.page)
+        for b in self.result["bets"]:
+            for r in b["figures"].get("series", []):
+                self.assertIn(r["shown"].upper(), text, f"{b['name']}: a reading the line draws is not printed")
+
+    def test_green_and_red_only_beside_their_words(self):
+        body = self.page.split("</style>", 1)[1]
+        # Take out every mark that prints its own word: the template's status mark, and svgkit's status_word.
+        rest = re.sub(r'<span class="st (landed|stalled)">\1</span>', "", body)
+        rest = re.sub(r'<g class="sk-st">(?:(?!</g>).)*?var\(--(landed|stalled)\)(?:(?!</g>).)*?>\1</text></g>', "", rest, flags=re.I)
+        for word in ("landed", "stalled"):
+            self.assertNotIn(f"var(--{word})", rest)
+            self.assertNotIn(f"st {word}", rest)
+        self.assertGreater(body.count("var(--landed)"), 0)
+        self.assertNotIn('class="ok"', body, "the template's green healthy-side band")
+        self.assertNotIn("rgba(92,211,140", body)
+
+    def test_each_visual_states_its_answer(self):
+        for b in self.result["bets"]:
+            if not b["status"]:
+                continue
+            f = b["figures"]
+            labels = re.findall(rf'aria-label="({re.escape(b["name"])}: [^"]+)"', self.page)
+            self.assertEqual(len(labels), 3, b["name"])  # the small multiple, the wide chart and the tall one
+            for label in labels:
+                self.assertIn(f"target of {f['bar']['shown']}", label)
+                self.assertTrue(label.endswith(f"{b['status'].capitalize()}."), label)
+
+    def test_public_copy_uses_plain_words(self):
+        public = svgkit.page_text(self.page.split("For your engineers", 1)[0]).lower()
+        for word in (" bet ", " bets ", " bar ", "within-noise", "source-stale", "verified_jumps", ".json"):
+            self.assertNotIn(word, public)
+        self.assertIn("landing brief</b>, a one-page plan", self.page)
 
     def test_source_text_is_escaped(self):
         result = json.loads(json.dumps(self.result))
@@ -313,11 +364,16 @@ class Sample(unittest.TestCase):
         self.assertGreater(css.rindex("::selection{background:var(--t1)"), css.rindex("::selection{background:var(--landed)"))
         self.assertGreater(css.rindex(":focus-visible{outline-color:var(--t1)}"), css.rindex(":focus-visible{outline:2px solid var(--landed)"))
 
-    def test_the_page_opens_with_a_five_line_summary(self):
+    def test_the_page_follows_the_sample_anatomy(self):
         page = (self.EX / "did-it-land.html").read_text(encoding="utf-8")
-        block = page.split('<ul class="summary">', 1)[1].split("</ul>", 1)[0]
-        self.assertEqual(block.count("<li>"), 5)
-        self.assertIn("<details>", page)
+        body = page.split('<main class="solo">', 1)[1]
+        order = ['class="sk-hdr"', "<h1>", 'class="minis"', "What to do next", 'class="cols"', "For your engineers"]
+        at = [body.index(x) for x in order]
+        self.assertEqual(at, sorted(at))
+        self.assertIn("<h1>Quote drafting landed. Job scheduler stalled. Five more are on watch.</h1>", body)
+        self.assertEqual(body.count('<div class="next">'), 1, "one next step leads the page")
+        self.assertIn('<span class="o">Head of Product, Field squad</span><span class="d">2026-12-10</span>', body)
+        self.assertIn("<details><summary>For your engineers</summary>", body)
 
 
 if __name__ == "__main__":

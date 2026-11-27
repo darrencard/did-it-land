@@ -52,7 +52,7 @@ import checks  # noqa: E402
 import landing_brief  # noqa: E402
 import loop  # noqa: E402
 
-VERSION = "0.3.1"
+VERSION = "0.3.2"
 STATUSES = ("landed", "watch", "stalled")
 # Under this many pre-launch readings the spread is a rough estimate; the read says so but does not hold the call.
 THIN_BASELINE = 5
@@ -289,6 +289,8 @@ def read_bet(bet: dict[str, Any], metrics: dict[str, Metric], as_of: dt.datetime
         "bar": {"value": brief.bar, "shown": brief.bar_text, "better": "higher" if brief.higher_is_better else "lower", "by": brief.by},
         "shipped": str(shipped),
         "as_of": as_of.isoformat().replace("+00:00", "Z"),
+        # Every reading up to the read, so the page can draw the line and print each point it draws.
+        "series": [{"date": str(r.date), "value": r.value, "shown": brief.show(r.value)} for r in readings],
     }
     if date_passed and deciding is not None:
         figures["at_date"] = {"date": str(deciding.date), "value": deciding.value, "shown": brief.show(deciding.value)}

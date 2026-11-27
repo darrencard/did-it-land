@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.2, 2026-11-27
+
+- The HTML page follows the Landing Loop sample anatomy: the shared header (mark, DACARD, skill, date, version, blue Illustrative tag), the verdict as the heading ("Quote drafting landed. Job scheduler stalled. Five more are on watch."), every project's line as a small multiple with its status word, one next step (the stalled project first) with the decider in brass, then each project in two columns: its line against the target on the left, its figures and next step on the right. Checks and readings fold under each project; flag codes, brief files, slugs and the record key fold under "For your engineers".
+- The signature picture: the metric over time, grey before launch and ink since, against the dashed target line and the due date, with the reading and the status word at the end. The target zone is neutral, never green; the scorecard's green healthy-side band is gone. A 720 wide variant for desktop and a 340 wide one for phones; each aria-label states the answer. Drawn with svgkit, vendored byte-identical from landing-loop and pinned in `VENDORED.json` under `landing-loop`.
+- Public copy in plain words: project, target, too close to call, the data source. Held calls print plain reasons ("Past the target of 80%, but not called yet: the data source jumped.").
+- The read's figures carry `series`, every reading up to the read, so the page draws the line and prints each point it draws. The `landed` key is unchanged apart from `computed_by`.
+- Tests: the pictures draw only printed figures, green and red appear only beside the words landed and stalled, each aria-label states the answer, and public copy uses plain words; the vendored svgkit matches its pin. Two lint findings fixed.
+
 ## 0.3.1, 2026-11-26
 
 - README: install through the Landing Loop bundle (`/plugin marketplace add darrencard/landing-loop`, then `/plugin install did-it-land@landing-loop`), with the paste-in prompt kept for a standalone install.
