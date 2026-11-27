@@ -548,7 +548,7 @@ def write_loop(result: dict[str, Any], loop_dir: Path, only: str | None = None) 
 def to_markdown(result: dict[str, Any]) -> str:
     """The page's Markdown twin, in the page's plain words: project, target, the number. Flag codes, brief files
     and slugs sit under "For your engineers" at the end."""
-    from render_html import CHECKS, better_words, plain  # noqa: PLC0415  (one set of public words for both outputs)
+    from render_html import CHECKS, better_words, figure_tail, past_target, plain, prior_shown  # noqa: PLC0415  (one set of public words for both outputs)
 
     title = f"Did it land? {result['company']}, read {result['as_of'][:10]}" if result["company"] else f"Did it land? Read {result['as_of'][:10]}"
     c = result["counts"]
@@ -560,12 +560,14 @@ def to_markdown(result: dict[str, Any]) -> str:
     lines += ["| Project | Before launch → now · target | Status |", "|---|---|---|"]
     for b in result["bets"]:
         if b["status"] is None:
-            lines.append(f"| {b['name']} | no reading | not read |")
+            lines.append(f"| {b['name']} | NO READING | not read |")
             continue
         f = b["figures"]
-        before = f"{f['move']['baseline_shown']} → " if "move" in f else ""
+        before = f"{prior_shown(f)} → " if "move" in f else ""
+        tail = f" · {figure_tail(f)}" if figure_tail(f) else ""
+        why = f", {past_target(b)}" if past_target(b) else ""
         cost = f", cost {b['cost']['budget_status']}" if b.get("cost") else ""
-        lines.append(f"| {b['name']} | {before}**{f['current']['shown']}** · TARGET {f['bar']['shown']} | **{b['status']}**{cost} |")
+        lines.append(f"| {b['name']} | {before}**{f['current']['shown']}** · TARGET {f['bar']['shown']}{tail} | **{b['status']}**{why}{cost} |")
     for b in result["bets"]:
         lines += ["", f"## {b['name']}: {b['status'] or 'not read'}", ""]
         if b["status"] is None:

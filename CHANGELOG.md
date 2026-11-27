@@ -2,6 +2,7 @@
 
 ## 0.3.4, 2026-11-27
 
+- Fix round 4: a watch row past its target says why under the status word, from the flag the read already sets (`past target · outcome fell`, `data out of date`, `data jumped`, `inside normal ups and downs`). The average before launch prints to as many decimals as the latest reading (`22% → 43%`, `16.9% → 18.1%`), one rule in code for the page and the Markdown twin. A lower-is-better number adds `LOWER IS BETTER` to its figure line, and the figure column prints numerals and uppercase words (`NO READING`). Tests for each.
 - The scorecard draws every row on one scale (svgkit 1.2.0 `frame_domain`): each value as a share of its own target, so every target tick lines up and rows in different units read against each other. Marks that differ but sit close are drawn 4px apart in value order, so Job scheduler's 2,060 → 2,100 and Payment links' 18.1% against its 18% target read apart. No value changes.
 - Rows stack when the frame is under 800px wide (a container query, as on the site), and the word column wraps at 180px.
 - svgkit 1.2.0, vendored byte-identical from landing-loop 78784ef and pinned in `VENDORED.json`. Tests: no legacy svgkit primitive on the page (rendered with its DeprecationWarning as an error, and `legacy_in` empty), and every target tick in the frame at one x.

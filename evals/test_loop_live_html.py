@@ -289,8 +289,49 @@ class Html(unittest.TestCase):
         self.assertEqual(svgkit.scaled_svgs_in(self.page), [], "a picture with a viewBox would scale")
         for b in [b for b in self.result["bets"] if b["status"] and "move" in b["figures"]]:
             f = b["figures"]
-            line = f'<span class="sc-l">{f["move"]["baseline_shown"]} <i>→</i> <b>{f["current"]["shown"]}</b> · TARGET {f["bar"]["shown"]}</span>'
+            tail = " · LOWER IS BETTER" if f["bar"]["better"] == "lower" else ""
+            line = f'<span class="sc-l">{render_html.prior_shown(f)} <i>→</i> <b>{f["current"]["shown"]}</b> · TARGET {f["bar"]["shown"]}{tail}</span>'
             self.assertIn(line, frames[0], b["name"])
+
+    def test_the_prior_prints_to_the_actuals_decimals(self):
+        def fig(mean, base, now):
+            return {"move": {"baseline_mean": mean, "baseline_shown": base}, "current": {"shown": now}}
+
+        self.assertEqual(render_html.prior_shown(fig(21.6667, "21.67%", "43%")), "22%")
+        self.assertEqual(render_html.prior_shown(fig(16.9167, "16.92%", "18.1%")), "16.9%")
+        self.assertEqual(render_html.prior_shown(fig(2060, "2,060", "2,100")), "2,060")
+        self.assertEqual(render_html.prior_shown(fig(0.3, "$0.3", "$0.25")), "$0.30")
+        self.assertIsNone(render_html.prior_shown({"current": {"shown": "43%"}}))
+        frame = svgkit.frames_in(self.page)[0]
+        for prior, now in re.findall(r'<span class="sc-l">([^ <]+) <i>→</i> <b>([^<]+)</b>', frame):
+            self.assertEqual(render_html.decimals(prior), render_html.decimals(now), (prior, now))
+
+    def test_a_watch_row_past_its_target_says_why_under_the_word(self):
+        words = {}
+        for row in re.findall(r'<div class="sc-r">(.*?)</div>', svgkit.frames_in(self.page)[0]):
+            name = re.search(r'<span class="sc-n">([^<]+)</span>', row).group(1)
+            words[name] = re.findall(r'<span class="sc-w">([^<]+)</span>', row)
+        self.assertEqual(words["Payment links"], ["past target · inside normal ups and downs"])
+        self.assertEqual(words["Automatic reminders"], ["past target · outcome fell"])
+        self.assertEqual(words["SMS reminders"], ["past target · data out of date"])
+        self.assertEqual(words["Invoice auto-match"], ["past target · data jumped"])
+        self.assertEqual(words["Invoice chasing"], [], "a watch row short of its target needs no reason")
+        for b in self.result["bets"]:
+            held = b["status"] == "watch" and "the call is held" in b["reason"]
+            self.assertEqual(bool(render_html.past_target(b)), held, b["name"])
+            for fl in b["flags"]:
+                if held and fl["code"] in render_html.HELD:
+                    self.assertIn(fl["code"], render_html.PAST, "every held code has its plain words")
+
+    def test_a_lower_is_better_figure_says_so(self):
+        frame = svgkit.frames_in(self.page)[0]
+        self.assertIn("<b>35</b> · TARGET 30 · LOWER IS BETTER</span>", frame)
+        self.assertEqual(frame.count("LOWER IS BETTER"), sum(1 for b in self.result["bets"] if b["status"] and b["figures"]["bar"]["better"] == "lower"))
+
+    def test_the_figure_column_is_numerals_and_uppercase_words(self):
+        for f in re.findall(r'<span class="sc-l">(.*?)</span>', svgkit.frames_in(self.page)[0]):
+            text = re.sub(r"<[^>]+>", "", f)
+            self.assertEqual(text, text.upper(), f)
 
     def test_labels_render_12px_and_names_14px(self):
         css = self.page.split("<style>", 1)[1].split("</style>", 1)[0]

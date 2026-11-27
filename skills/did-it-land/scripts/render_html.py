@@ -223,18 +223,65 @@ def better_words(f: dict[str, Any]) -> str:
     return "or higher" if f["bar"]["better"] == "higher" else "or lower"
 
 
+NUMBER = re.compile(r"-?[\d,]+(?:\.\d+)?")
+
+
+def decimals(shown: str) -> int:
+    """How many decimals a printed value carries: "43%" 0, "18.1%" 1."""
+    m = NUMBER.search(shown)
+    return len(m.group().split(".")[1]) if m and "." in m.group() else 0
+
+
+def prior_shown(f: dict[str, Any]) -> str | None:
+    """The average before launch, to as many decimals as the actual prints, in its own form: 21.67% beside 43%
+    reads 22%, 16.92% beside 18.1% reads 16.9%. None when there is no move to show."""
+    m = f.get("move")
+    if not m:
+        return None
+    value = f"{m['baseline_mean']:,.{decimals(f['current']['shown'])}f}"
+    return NUMBER.sub(lambda _: value, m["baseline_shown"], count=1)
+
+
+# Why a watch row past its target is held, in the flag's own plain words, as the second line under the status word.
+PAST = {
+    "within-noise": "inside normal ups and downs",
+    "source-stale": "data out of date",
+    "source-jumpy": "data jumped",
+    "metric-up-outcome-down": "outcome fell",
+    "metric-up-outcome-flat": "outcome held flat",
+    "brief-changed": "plan changed",
+    "brief-after-launch": "target set after launch",
+    "no-baseline": "no readings before launch",
+}
+
+
+def past_target(b: dict[str, Any]) -> str:
+    """"past target · outcome fell" for a watch row whose call is held past its target; else ""."""
+    if b["status"] != "watch" or "the call is held" not in b["reason"]:
+        return ""
+    why = [PAST[fl["code"]] for fl in b["flags"] if fl["code"] in PAST]
+    return " · ".join(["past target", *dict.fromkeys(why)])
+
+
+def figure_tail(f: dict[str, Any]) -> str:
+    """"LOWER IS BETTER" on the figure line of a metric that should fall; else ""."""
+    return "LOWER IS BETTER" if f["bar"]["better"] == "lower" else ""
+
+
 def scorecard_row(b: dict[str, Any], domain: tuple[float, float]) -> str:
     """One project: name | range line | before launch → now · TARGET x | status word, and the cost word when set.
     Every row shares the frame's one scale, each value read as a share of its own target, so the ticks line up."""
     if b["status"] is None:
-        return sk.sc_row(b["name"], figure=sk.figure_line("no reading"), word=sk.check_word("not read"))
+        return sk.sc_row(b["name"], figure=sk.figure_line("NO READING"), word=sk.check_word("not read"))
     f = b["figures"]
     m = f.get("move")
     picture = sk.range_line(
         prior=m["baseline_mean"] if m else None, actual=f["current"]["value"], target=f["bar"]["value"], status=b["status"], domain=domain, relative=True
     )
-    figure = sk.figure_line(f["current"]["shown"], prior=m["baseline_shown"] if m else None, target=f["bar"]["shown"])
-    return sk.sc_row(b["name"], picture=picture, figure=figure, word=sk.status_mark(b["status"]) + cost_word(b))
+    figure = sk.figure_line(f["current"]["shown"], prior=prior_shown(f), target=f["bar"]["shown"], tail=figure_tail(f))
+    why = past_target(b)
+    word = sk.status_mark(b["status"]) + (sk.check_word(why) if why else "") + cost_word(b)
+    return sk.sc_row(b["name"], picture=picture, figure=figure, word=word)
 
 
 def scorecard(result: dict[str, Any]) -> str:

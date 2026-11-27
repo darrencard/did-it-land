@@ -8,13 +8,13 @@ The scorecard: one row per project, its average before launch, the latest readin
 
 | Project | Before launch → now · target | Status |
 |---|---|---|
-| Quote drafting | 21.67% → **43%** · TARGET 40% | **landed**, cost over budget |
-| Invoice chasing | 40.6 → **35** · TARGET 30 | **watch** |
+| Quote drafting | 22% → **43%** · TARGET 40% | **landed**, cost over budget |
+| Invoice chasing | 41 → **35** · TARGET 30 · LOWER IS BETTER | **watch** |
 | Job scheduler | 2,060 → **2,100** · TARGET 3,000 | **stalled** |
-| Payment links | 16.92% → **18.1%** · TARGET 18% | **watch** |
-| Automatic reminders | 8,000 → **24,000** · TARGET 20,000 | **watch** |
-| SMS reminders | 41% → **58%** · TARGET 55% | **watch** |
-| Auto match | 61.5% → **95%** · TARGET 80% | **watch** |
+| Payment links | 16.9% → **18.1%** · TARGET 18% | **watch**, past target · inside normal ups and downs |
+| Automatic reminders | 8,000 → **24,000** · TARGET 20,000 | **watch**, past target · outcome fell |
+| SMS reminders | 41% → **58%** · TARGET 55% | **watch**, past target · data out of date |
+| Auto match | 62% → **95%** · TARGET 80% | **watch**, past target · data jumped |
 
 ## Quote drafting: landed
 
