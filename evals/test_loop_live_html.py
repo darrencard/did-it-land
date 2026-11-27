@@ -236,7 +236,7 @@ class Html(unittest.TestCase):
         self.assertIn("is not proof", self.page)
 
     def test_the_visuals_draw_only_figures_the_page_prints(self):
-        self.assertGreater(len(svgkit.svgs_in(self.page)), 7)
+        self.assertEqual(len(svgkit.svgs_in(self.page.split('<div class="sc scg"', 1)[1].split('<div class="next">', 1)[0])), 7, "one range line per project read")
         self.assertEqual(svgkit.unprinted(self.page), [])
         text = svgkit.page_text(self.page)
         for b in self.result["bets"]:
@@ -245,26 +245,21 @@ class Html(unittest.TestCase):
 
     def test_green_and_red_only_beside_their_words(self):
         body = self.page.split("</style>", 1)[1]
-        # Take out every mark that prints its own word: the template's status mark, and svgkit's status_word.
-        rest = re.sub(r'<span class="st (landed|stalled)">\1</span>', "", body)
-        rest = re.sub(r'<g class="sk-st">(?:(?!</g>).)*?var\(--(landed|stalled)\)(?:(?!</g>).)*?>\1</text></g>', "", rest, flags=re.I)
-        for word in ("landed", "stalled"):
-            self.assertNotIn(f"var(--{word})", rest)
-            self.assertNotIn(f"st {word}", rest)
-        self.assertGreater(body.count("var(--landed)"), 0)
+        self.assertNotIn("var(--landed)", body)
+        self.assertNotIn("var(--stalled)", body)
+        # The status colour is a class: the word's mark, and the dot in the same row.
+        for row in re.findall(r'<div class="sc-r">.*?</div>', body):
+            for word in ("landed", "stalled", "watch"):
+                if f'class="ac {word}"' in row:
+                    self.assertIn(f'<span class="st {word}">{word}</span>', row)
+        css = self.page.split("<style>", 1)[1].split("</style>", 1)[0]
         self.assertNotIn('class="ok"', body, "the template's green healthy-side band")
         self.assertNotIn("rgba(92,211,140", body)
+        self.assertIn(".sc-rl .ac.landed{fill:var(--landed)}", css)
 
-    def test_each_visual_states_its_answer(self):
-        for b in self.result["bets"]:
-            if not b["status"]:
-                continue
-            f = b["figures"]
-            labels = re.findall(rf'aria-label="({re.escape(b["name"])}: [^"]+)"', self.page)
-            self.assertEqual(len(labels), 3, b["name"])  # the small multiple, the wide chart and the tall one
-            for label in labels:
-                self.assertIn(f"target of {f['bar']['shown']}", label)
-                self.assertTrue(label.endswith(f"{b['status'].capitalize()}."), label)
+    def test_the_scorecard_states_its_answer(self):
+        labels = re.findall(r'role="img" aria-label="([^"]+)"', self.page)
+        self.assertEqual(labels, [render_html.verdict(self.result)])
 
     def test_public_copy_uses_plain_words(self):
         public = svgkit.page_text(self.page.split("For your engineers", 1)[0]).lower()
@@ -286,12 +281,34 @@ class Html(unittest.TestCase):
         before, after = ".a{font:400 10px/16px var(--mono)}.b{font-size:10.5px}.c{font-size:13px}", ".a{font:400 11px/16px var(--mono)}.b{font-size:11px}.c{font-size:13px}"
         self.assertEqual(render_html.floor_fonts(before), after)
 
-    def test_the_desktop_chart_is_640_wide_so_its_labels_stay_11px_in_the_left_column(self):
-        wide = re.findall(r'<svg class="sk-wide"[^>]*viewBox="0 0 (\d+) ', self.page)
-        self.assertTrue(wide)
-        self.assertEqual(set(wide), {"640"})
-        # The left column is 2.4fr of the 1040px content less a 40px gap, and at least 640 from 1100px up.
-        self.assertIn(".cols{display:grid;grid-template-columns:minmax(0,2.4fr) minmax(260px,1fr);gap:24px 40px", self.page)
+    def test_the_scorecard_is_rows_with_no_text_inside_a_picture(self):
+        frames = svgkit.frames_in(self.page)
+        self.assertEqual(len(frames), 1)
+        self.assertEqual(frames[0].count('<div class="sc-r">'), len(self.result["bets"]))
+        self.assertEqual(svgkit.svgs_with_text(self.page), [], "text inside an SVG")
+        self.assertEqual(svgkit.scaled_svgs_in(self.page), [], "a picture with a viewBox would scale")
+        for b in [b for b in self.result["bets"] if b["status"] and "move" in b["figures"]]:
+            f = b["figures"]
+            line = f'<span class="sc-l">{f["move"]["baseline_shown"]} <i>→</i> <b>{f["current"]["shown"]}</b> · TARGET {f["bar"]["shown"]}</span>'
+            self.assertIn(line, frames[0], b["name"])
+
+    def test_labels_render_12px_and_names_14px(self):
+        css = self.page.split("<style>", 1)[1].split("</style>", 1)[0]
+        self.assertEqual(set(svgkit.font_sizes(css)), {"var(--sc-m)", "var(--sc-n)"})
+        self.assertIn("--sc-m:calc(12px / var(--sc-z))", css)
+        self.assertIn("--sc-n:calc(14px / var(--sc-z))", css)
+        self.assertIn(".scg{--sc-z:1;", css, "a sample page has no zoom")
+
+    def test_no_box_inside_the_scorecard_and_no_overlap(self):
+        css = self.page.split("<style>", 1)[1].split("</style>", 1)[0]
+        self.assertEqual(svgkit.boxes_in_frames(self.page, css), [])
+        self.assertNotIn("position:absolute", svgkit.SCORECARD_CSS)
+        self.assertNotIn('class="chip"', self.page.split("For your engineers", 1)[0])
+
+    def test_only_the_focus_project_is_open(self):
+        opened = re.findall(r'<details class="proj"( open)?><summary><h2 id="([^"]+)"', self.page)
+        self.assertEqual([slug for o, slug in opened if o], [self.result["bets"][0]["slug"]])
+        self.assertEqual(len(opened), len(self.result["bets"]))
 
     def test_the_header_prints_the_plain_name_and_the_code_name_is_for_engineers(self):
         self.assertEqual(re.search(r'<span class="sk-meta"><span>(.*?)</span>', self.page).group(1), "Did it land?")
@@ -372,7 +389,7 @@ class Sample(unittest.TestCase):
         self.assertIn("- **landed**. Past the target of 40% by 2026-11-15. Cost: over budget, from the cost check.", md)
         self.assertIn(f"the cost word is cited from `{cited}`", md.split("## For your engineers", 1)[1])
         self.assertIn("cost per task $0.0338 against $0.027, 25% over", md)
-        self.assertIn(f'<span class="chip" title="cited from {cited}">cost over budget</span>', (self.EX / "did-it-land.html").read_text(encoding="utf-8"))
+        self.assertIn('<span class="st landed">landed</span><span class="sc-w">cost over budget</span>', (self.EX / "did-it-land.html").read_text(encoding="utf-8"))
 
     def test_next_steps_are_due_on_or_after_the_read(self):
         result = did_it_land.read(self.EX / "bundle.json", self.EX)
@@ -398,7 +415,7 @@ class Sample(unittest.TestCase):
     def test_the_page_follows_the_sample_anatomy(self):
         page = (self.EX / "did-it-land.html").read_text(encoding="utf-8")
         body = page.split('<main class="solo">', 1)[1]
-        order = ['class="sk-hdr"', "<h1>", 'class="minis"', "What to do next", 'class="cols"', "For your engineers"]
+        order = ['class="sk-hdr"', "<h1>", 'class="sc scg"', "What to do next", '<details class="proj" open>', "For your engineers"]
         at = [body.index(x) for x in order]
         self.assertEqual(at, sorted(at))
         self.assertIn("<h1>Quote drafting landed. Job scheduler stalled. Five more are on watch.</h1>", body)

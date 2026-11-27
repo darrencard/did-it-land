@@ -4,15 +4,17 @@
 
 1 landed, 5 watch, 1 stalled, 0 not read.
 
-| Project | Status | Number | Now | Target, by | Source |
-|---|---|---|---|---|---|
-| Quote drafting | **landed** | Quote draft acceptance rate | 43% (2026-11-23) | 40% or higher, 2026-11-15 | Illustrative product analytics export, quote_drafts_weekly.csv |
-| Invoice chasing | **watch** | Days sales outstanding | 35 (2026-11-23) | 30 or lower, 2026-12-31 | Illustrative finance export, dso_weekly.csv |
-| Job scheduler | **stalled** | Weekly active schedulers | 2,100 (2026-11-23) | 3,000 or higher, 2026-10-31 | Illustrative product analytics export, scheduler_wau.csv |
-| Payment links | **watch** | Payment link conversion | 18.1% (2026-11-23) | 18% or higher, 2026-11-30 | Illustrative billing export, payment_links_weekly.csv |
-| Automatic reminders | **watch** | Reminders sent per week | 24,000 (2026-11-23) | 20,000 or higher, 2026-11-30 | Illustrative messaging log export, reminders_weekly.csv |
-| SMS reminders | **watch** | Reminder open rate | 58% (2026-11-09) | 55% or higher, 2026-12-15 | Illustrative messaging log export, reminder_opens_weekly.csv |
-| Auto match | **watch** | Invoice auto-match rate | 95% (2026-11-23) | 80% or higher, 2026-12-31 | Illustrative reconciliation export, auto_match_weekly.csv |
+The scorecard: one row per project, its average before launch, the latest reading and the target.
+
+| Project | Before launch → now · target | Status |
+|---|---|---|
+| Quote drafting | 21.67% → **43%** · TARGET 40% | **landed**, cost over budget |
+| Invoice chasing | 40.6 → **35** · TARGET 30 | **watch** |
+| Job scheduler | 2,060 → **2,100** · TARGET 3,000 | **stalled** |
+| Payment links | 16.92% → **18.1%** · TARGET 18% | **watch** |
+| Automatic reminders | 8,000 → **24,000** · TARGET 20,000 | **watch** |
+| SMS reminders | 41% → **58%** · TARGET 55% | **watch** |
+| Auto match | 61.5% → **95%** · TARGET 80% | **watch** |
 
 ## Quote drafting: landed
 
@@ -42,10 +44,10 @@
 
 ## Payment links: watch
 
-- **watch**. Past the target of 18%, but too close to call.
+- **watch**. Past the target of 18%, but inside normal ups and downs.
 - Payment link conversion is 18.1% on 2026-11-23, against a target of 18% or higher by 2026-11-30. Source: Illustrative billing export, payment_links_weekly.csv.
 - Since launch on 2026-10-19: from an average of 16.92% over 6 readings before launch to 18.1%, a move of +1.18, 1.48 times its usual ups and downs before launch.
-- Check: Too close to call: since launch the number sits inside the ups and downs it had before launch.
+- Check: Inside normal ups and downs: since launch the number sits inside the ups and downs it had before launch.
 - Check: The tracker shows this project green, one step rosier than this read.
 - Next step: Run an experiment before calling it: hold the project back from a random group and compare Payment link conversion between the two groups. Correct the status shown in the tracker. Decides: Head of Product, Payments squad. Due: 2026-11-30.
 
@@ -95,4 +97,4 @@ A number moving is not proof that the project moved it. This read says whether t
 
 Quote drafting: the cost word is cited from `cost-budget-check 0.3.2`; the read never recomputes it.
 
-With --loop and --bet, the read adds its page to the project file: the `landed` key of `landing/<slug>.json`, and no other key. Built by did-it-land 0.3.2.
+With --loop and --bet, the read adds its page to the project file: the `landed` key of `landing/<slug>.json`, and no other key. Built by did-it-land 0.3.3.

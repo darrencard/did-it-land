@@ -52,7 +52,7 @@ import checks  # noqa: E402
 import landing_brief  # noqa: E402
 import loop  # noqa: E402
 
-VERSION = "0.3.2"
+VERSION = "0.3.3"
 STATUSES = ("landed", "watch", "stalled")
 # Under this many pre-launch readings the spread is a rough estimate; the read says so but does not hold the call.
 THIN_BASELINE = 5
@@ -556,16 +556,16 @@ def to_markdown(result: dict[str, Any]) -> str:
     if result["illustrative"]:
         lines += ["*Illustrative: every figure here is sample data.*", ""]
     lines += [f"{c['landed']} landed, {c['watch']} watch, {c['stalled']} stalled, {c['not read']} not read.", ""]
-    lines += ["| Project | Status | Number | Now | Target, by | Source |", "|---|---|---|---|---|---|"]
+    lines += ["The scorecard: one row per project, its average before launch, the latest reading and the target.", ""]
+    lines += ["| Project | Before launch → now · target | Status |", "|---|---|---|"]
     for b in result["bets"]:
         if b["status"] is None:
-            lines.append(f"| {b['name']} | not read | | | | |")
+            lines.append(f"| {b['name']} | no reading | not read |")
             continue
         f = b["figures"]
-        lines.append(
-            f"| {b['name']} | **{b['status']}** | {b['metric']} | {f['current']['shown']} ({f['current']['date']}) "
-            f"| {f['bar']['shown']} {better_words(f)}, {f['bar']['by']} | {b['source']} |"
-        )
+        before = f"{f['move']['baseline_shown']} → " if "move" in f else ""
+        cost = f", cost {b['cost']['budget_status']}" if b.get("cost") else ""
+        lines.append(f"| {b['name']} | {before}**{f['current']['shown']}** · TARGET {f['bar']['shown']} | **{b['status']}**{cost} |")
     for b in result["bets"]:
         lines += ["", f"## {b['name']}: {b['status'] or 'not read'}", ""]
         if b["status"] is None:
@@ -729,7 +729,7 @@ def main() -> int:
         if args.html:
             import render_html  # noqa: PLC0415  (only needed for HTML)
 
-            Path(args.html).write_text(render_html.page(result), encoding="utf-8")
+            Path(args.html).write_text(render_html.page(result, args.bet), encoding="utf-8")
             print(f"did_it_land: wrote {args.html}", file=sys.stderr)
         if args.md:
             Path(args.md).write_text(to_markdown(result), encoding="utf-8")
@@ -740,7 +740,7 @@ def main() -> int:
             folder = Path(args.out)
             folder.mkdir(parents=True, exist_ok=True)
             (folder / "read.md").write_text(to_markdown(result), encoding="utf-8")
-            (folder / "read.html").write_text(render_html.page(result), encoding="utf-8")
+            (folder / "read.html").write_text(render_html.page(result, args.bet), encoding="utf-8")
             (folder / "read.json").write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
             print(f"did_it_land: wrote read.md, read.html and read.json in {folder}", file=sys.stderr)
         print(json.dumps(result, indent=2, ensure_ascii=False) if args.json else to_markdown(result), end="" if not args.json else "\n")

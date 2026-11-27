@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.3, 2026-11-27
+
+- The page leads with the scorecard in the grammar of the outcome scorecard on dacard.ai/update: one row per project with its name, a range line (grey dot the average before launch, the status dot the latest reading, a tick for the target, no band), `21.67% → 43% · TARGET 40%` right-aligned, and the status word, with the cost word as text where the cost check set one. Labels and figures are Geist Mono 12px and names Geist 14px as rendered; no text sits inside an SVG and no picture scales. The small multiples and the per-project time charts are gone; every reading still prints in each project's fold.
+- Only the project named with `--bet` opens below the scorecard; the six others fold, and their rows stay on the scorecard.
+- The noise check says "inside normal ups and downs", not "too close to call" (that word belongs to eval-kit): "Past the target of 18%, but inside normal ups and downs."
+- The Markdown twin's table is the scorecard: project, `before → now · TARGET x`, status and the cost word.
+- Plain words in the README and SKILL.md: project for bet, target for bar, the project file for the loop's record. SKILL.md tells Claude to use the user's own word if they say bet.
+- svgkit 1.1.0, vendored byte-identical from landing-loop 0210218 and pinned in `VENDORED.json`. Tests: no text inside an SVG, no picture with a viewBox, label sizes only 12 or 14px in the CSS, no box inside the frame, one row per project with its figure line, status colour only in a row that prints the word, and only the focus project open.
+
 ## 0.3.2, 2026-11-27
 
 - The HTML page follows the Landing Loop sample anatomy: the shared header (mark, DACARD, skill, date, version, blue Illustrative tag), the verdict as the heading ("Quote drafting landed. Job scheduler stalled. Five more are on watch."), every project's line as a small multiple with its status word, one next step (the stalled project first) with the decider in brass, then each project in two columns: its line against the target on the left, its figures and next step on the right. Checks and readings fold under each project; flag codes, brief files, slugs and the record key fold under "For your engineers".

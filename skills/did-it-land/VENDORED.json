@@ -39,12 +39,12 @@
   },
   "landing-loop": {
     "repository": "https://github.com/darrencard/landing-loop",
-    "commit": "5d01756d08ab3eb92b457c3286729791df6bcf5f",
+    "commit": "02102183acd0cfb48775363483853c0aa8d07c15",
     "rule": "Copied unchanged from tools/svgkit.py (see tools/SVGKIT.md there). Never edit it here.",
     "files": {
       "scripts/vendor/svgkit.py": {
         "from": "tools/svgkit.py",
-        "sha256": "8526cf100159a9e5a8958bba4ceb0373a7edc265f481d63795d1731a5999d054"
+        "sha256": "4be9e2c6e2b74704daa76b9744a86a736e0fc883c533a68ee663dd6216a1c631"
       }
     }
   }
