@@ -22,7 +22,7 @@ The scorecard: one row per project, its average before launch, the latest readin
 - Quote draft acceptance rate is 43% on 2026-11-23, against a target of 40% or higher by 2026-11-15. On the due date it read 41% (2026-11-09). Source: Illustrative product analytics export, quote_drafts_weekly.csv.
 - Since launch on 2026-09-07: from an average of 21.67% over 6 readings before launch to 41%, a move of +19.33, 5.05 times its usual ups and downs before launch.
 - The result it should drive, Quote win rate: 31 to 36 over the same weeks (7 readings). Source: Illustrative CRM export, quotes_won_weekly.csv.
-- The cost check, from the project file: over budget (cost-budget-check 0.3.2, 2026-11-01 to 2026-11-14): cost per task $0.0338 against $0.027, 25% over; AI usage per task 10,300 against 9,000, 14% over; AI price per unit $0.00000328 against $0.000003, 9% over.
+- The cost check, from the project file: over budget (cost-budget-check 0.3.3, 2026-11-01 to 2026-11-14): cost per task $0.0338 against $0.027, 25% over; AI usage per task 10,300 against 9,000, 14% over; AI price per unit $0.00000328 against $0.000003, 9% over.
 - Check: Cost is over budget, from the cost check. It never changes the status.
 - Next step: Keep the number on the scorecard, and decide whether to scale the project, given cost is over budget. Decides: Head of Product, Quoting squad. Due: 2026-12-10.
 
@@ -95,6 +95,6 @@ A number moving is not proof that the project moved it. This read says whether t
 | SMS reminders | watch | `source-stale`, `thin-baseline`, `one-step-rosier` | sms-reminders.md | `sms-reminders` |
 | Auto match | watch | `source-jumpy`, `thin-baseline` | auto-match.md | `auto-match` |
 
-Quote drafting: the cost word is cited from `cost-budget-check 0.3.2`; the read never recomputes it.
+Quote drafting: the cost word is cited from `cost-budget-check 0.3.3`; the read never recomputes it.
 
 With --loop and --bet, the read adds its page to the project file: the `landed` key of `landing/<slug>.json`, and no other key. Built by did-it-land 0.3.4.
