@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.5, 2026-11-27
+
+- Text runs the full column: the heading, the lede, the next step, section text, notes and captions are as wide as the scorecard frame. The page's own CSS lifts every cap on text (the template's `.lede` 62ch, and this page's heading 22ch, figures 760px and checks 80ch; the readings table keeps its width) and sets `text-wrap: balance` on the heading and `pretty` on paragraphs; the vendored template is unchanged. Test: the page CSS sets no max-width on h1, .lede or p, and the override comes after the template's cap.
+
 ## 0.3.4, 2026-11-27
 
 - Fix round 4: a watch row past its target says why under the status word, from the flag the read already sets (`past target · outcome fell`, `data out of date`, `data jumped`, `inside normal ups and downs`). The average before launch prints to as many decimals as the latest reading (`22% → 43%`, `16.9% → 18.1%`), one rule in code for the page and the Markdown twin. A lower-is-better number adds `LOWER IS BETTER` to its figure line, and the figure column prints numerals and uppercase words (`NO READING`). Tests for each.

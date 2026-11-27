@@ -1,6 +1,6 @@
 {
   "name": "did-it-land",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "A post-launch read. For each shipped bet with a landing brief, it calls landed, watch or stalled from the team's own metric data, computed in code with every figure sourced, and flags moves within noise, stale or jumpy sources, metrics that climb while outcomes stall, and green statuses over red metrics. Step 4 of the Landing Loop: reads and writes landing/<bet>.json, takes live data through the Leader Report's collectors, and renders one HTML page.",
   "author": { "name": "Dacard" },
   "license": "MIT"

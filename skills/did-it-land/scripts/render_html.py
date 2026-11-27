@@ -44,7 +44,7 @@ PAGE_CSS = """
 main.solo{margin-left:0}
 .solo .slide{min-height:0}
 .solo .slide.cover{min-height:0;padding-top:40px;padding-bottom:48px;justify-content:flex-start}
-.solo h1{font-size:clamp(34px,4.6vw,60px);line-height:1;letter-spacing:-.04em;max-width:22ch;margin-bottom:20px}
+.solo h1{font-size:clamp(34px,4.6vw,60px);line-height:1;letter-spacing:-.04em;margin-bottom:20px;text-wrap:balance}
 .solo .lede{margin-bottom:28px}
 .solo .lede b{color:var(--t1);font-weight:500}
 .next{margin-top:28px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:8px 32px;align-items:baseline;border:1px solid var(--brass);border-radius:12px;padding:20px 24px;background:var(--brass-bg)}
@@ -58,7 +58,7 @@ main.solo{margin-left:0}
 .proj .marks{display:flex;align-items:baseline;gap:12px}
 .proj .marks .sc-w{font:400 12px/16px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--t2)}
 .solo .scg{margin-top:8px}
-.figs{margin:0;display:grid;max-width:760px}
+.figs{margin:0;display:grid}
 .figs>div{display:grid;grid-template-columns:112px minmax(0,1fr);gap:4px 16px;border-top:1px solid var(--line);padding:11px 0}
 .figs dt{font:400 11px/22px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
 .figs dd{margin:0;font-size:13.5px;line-height:1.55;color:var(--t2)}
@@ -67,7 +67,7 @@ main.solo{margin-left:0}
 .figs .own .o,.figs .own .d{display:block;font:400 11.5px/18px var(--mono);margin-top:4px}
 .figs .own .d{color:var(--t2)}
 .solo details{margin-top:24px}
-.checks{margin:12px 0 0;padding:0;list-style:none;max-width:80ch}
+.checks{margin:12px 0 0;padding:0;list-style:none}
 .checks li{border-top:1px solid var(--line);padding:9px 0;font-size:13.5px;color:var(--t2)}
 .readings{margin-top:16px;max-width:520px}
 .src{font:400 12px/16px var(--mono);color:var(--t3)}
@@ -83,6 +83,8 @@ main.solo{margin-left:0}
 .foot{max-width:1120px;margin:0 auto;padding:28px 40px 64px;color:var(--t3);font-size:12px}
 @media (max-width:980px){.foot{padding:24px 16px 48px}.solo .slide.cover{padding-top:24px}.next{grid-template-columns:1fr}}
 @media (max-width:560px){.figs>div{grid-template-columns:1fr;gap:0}}
+.solo h1,.solo .lede,.solo .next,.solo .slide p,.solo .slide li,.solo .sc-c,.sk figcaption{max-width:none}
+.solo .slide p,.solo .slide li,.solo .sc-c{text-wrap:pretty}
 """
 
 NUMBER_WORDS = ("No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve")
@@ -256,7 +258,7 @@ PAST = {
 
 
 def past_target(b: dict[str, Any]) -> str:
-    """"past target · outcome fell" for a watch row whose call is held past its target; else ""."""
+    """ "past target · outcome fell" for a watch row whose call is held past its target; else ""."""
     if b["status"] != "watch" or "the call is held" not in b["reason"]:
         return ""
     why = [PAST[fl["code"]] for fl in b["flags"] if fl["code"] in PAST]
@@ -264,7 +266,7 @@ def past_target(b: dict[str, Any]) -> str:
 
 
 def figure_tail(f: dict[str, Any]) -> str:
-    """"LOWER IS BETTER" on the figure line of a metric that should fall; else ""."""
+    """ "LOWER IS BETTER" on the figure line of a metric that should fall; else ""."""
     return "LOWER IS BETTER" if f["bar"]["better"] == "lower" else ""
 
 
@@ -275,9 +277,7 @@ def scorecard_row(b: dict[str, Any], domain: tuple[float, float]) -> str:
         return sk.sc_row(b["name"], figure=sk.figure_line("NO READING"), word=sk.check_word("not read"))
     f = b["figures"]
     m = f.get("move")
-    picture = sk.range_line(
-        prior=m["baseline_mean"] if m else None, actual=f["current"]["value"], target=f["bar"]["value"], status=b["status"], domain=domain, relative=True
-    )
+    picture = sk.range_line(prior=m["baseline_mean"] if m else None, actual=f["current"]["value"], target=f["bar"]["value"], status=b["status"], domain=domain, relative=True)
     figure = sk.figure_line(f["current"]["shown"], prior=prior_shown(f), target=f["bar"]["shown"], tail=figure_tail(f))
     why = past_target(b)
     word = sk.status_mark(b["status"]) + (sk.check_word(why) if why else "") + cost_word(b)
@@ -369,7 +369,7 @@ def engineers(result: dict[str, Any]) -> str:
     """Flag codes, files and the record key, folded: none of it is needed to act on the read."""
     rows = []
     for b in result["bets"]:
-        codes = "".join(f'<code>{e(fl["code"])}</code>' for fl in b["flags"]) or "none"
+        codes = "".join(f"<code>{e(fl['code'])}</code>" for fl in b["flags"]) or "none"
         brief = Path(b["brief_path"]).name if b.get("brief_path") else "none"
         rows.append(f"<tr><td>{e(b['name'])}</td><td>{e(b['status'] or 'not read')}</td><td>{codes}</td><td>{e(brief)}</td><td>{e(b['slug'])}</td></tr>")
     head = "<tr><th>Project</th><th>Status</th><th>Flag codes</th><th>Landing brief</th><th>Slug</th></tr>"

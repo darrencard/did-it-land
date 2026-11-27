@@ -478,5 +478,23 @@ class Sample(unittest.TestCase):
         self.assertIn("<details><summary>For your engineers</summary>", body)
 
 
+class FullColumn(unittest.TestCase):
+    """Text runs the full content column, as wide as the scorecard frame (2026-11-27): no max-width on h1, .lede or p."""
+
+    def test_page_css_sets_no_max_width_on_text(self) -> None:
+        css = render_html.PAGE_CSS
+        for selector, body in re.findall(r"([^{}]+)\{([^}]*max-width:[^}]*)\}", css):
+            if re.search(r"(^|[\s,])(h1|\.lede|p|li|\.next|\.note|\.figs|\.checks)([\s,:.]|$)", selector):
+                self.assertIn("max-width:none", body, selector)
+        self.assertIn(".solo h1,.solo .lede,.solo .next,.solo .slide p,.solo .slide li,.solo .sc-c,.sk figcaption{max-width:none}", css)
+        self.assertIn("text-wrap:balance", css)
+        self.assertIn(".solo .slide p,.solo .slide li,.solo .sc-c{text-wrap:pretty}", css)
+
+    def test_the_override_comes_after_the_template_cap(self) -> None:
+        page = (Path(__file__).resolve().parents[1] / "examples/acme/did-it-land.html").read_text(encoding="utf-8")
+        css = page.split("<style>", 1)[1].split("</style>", 1)[0]
+        self.assertGreater(css.rindex("{max-width:none}"), css.index("max-width:62ch"))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -4,7 +4,7 @@ description: A post-launch read that says whether shipped work landed. For each 
 license: MIT. See LICENSE in the repository root.
 metadata:
   author: Dacard
-  version: "0.3.4"
+  version: "0.3.5"
 ---
 
 # Did it land?

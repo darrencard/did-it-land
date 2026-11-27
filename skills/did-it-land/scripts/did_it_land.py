@@ -52,7 +52,7 @@ import checks  # noqa: E402
 import landing_brief  # noqa: E402
 import loop  # noqa: E402
 
-VERSION = "0.3.4"
+VERSION = "0.3.5"
 STATUSES = ("landed", "watch", "stalled")
 # Under this many pre-launch readings the spread is a rough estimate; the read says so but does not hold the call.
 THIN_BASELINE = 5
